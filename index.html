@@ -5,19 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FAS — Fire Alarm System Designer · Ejaf Technology</title>
   <meta name="description" content="FAS — Fire Alarm System design, BOQ, PDF plan markup and professional reporting based on NFPA 72 (2025). Ejaf Technology. Powered by Siwar." />
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-
-  <!-- Third-party libraries (loaded from CDN; require internet) -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <style>
 /* =====================================================================
    FAS — styles.css
@@ -26,18 +21,18 @@
    ===================================================================== */
 
 :root {
-  --bg:        #0b0e13;
-  --bg-1:      #11161d;
-  --bg-2:      #161c25;
-  --bg-3:      #1c232e;
-  --inset:     #0e131a;
-  --line:      #28313d;
-  --line-2:    #323d4b;
-  --text:      #e7eef6;
-  --muted:     #8a98a8;
-  --muted-2:   #5f6b79;
-  --accent:    #ff463a;   /* signal red */
-  --accent-d:  #d8362c;
+  --bg:        #20262f;
+  --bg-1:      #29313c;
+  --bg-2:      #2f3845;
+  --bg-3:      #38424f;
+  --inset:     #252d38;
+  --line:      #3c4858;
+  --line-2:    #4c5a6c;
+  --text:      #eef3f8;
+  --muted:     #b7c3d0;
+  --muted-2:   #8997a7;
+  --accent:    #ff5a45;   /* signal red */
+  --accent-d:  #e0432f;
   --amber:     #ffb020;
   --cyan:      #3dd6c4;
   --blue:      #5ab0ff;
@@ -45,7 +40,7 @@
   --violet:    #9d8cff;
   --radius:    10px;
   --radius-s:  7px;
-  --shadow:    0 18px 40px -22px rgba(0,0,0,.75);
+  --shadow:    0 16px 36px -24px rgba(0,0,0,.55);
   --font-display: 'Archivo', system-ui, sans-serif;
   --font-body:    'Manrope', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
@@ -128,7 +123,7 @@ a:hover { text-decoration: underline; }
 .topbar {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 14px; padding: 13px 26px;
-  background: rgba(13,17,23,.82); backdrop-filter: blur(10px);
+  background: rgba(32,38,47,.86); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
 .topbar .crumb { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
@@ -214,6 +209,13 @@ tbody tr:hover { background: rgba(255,255,255,.018); }
 td.num, th.num { text-align: right; font-family: var(--font-mono); }
 td input, td select { padding: 6px 8px; font-size: 12.5px; }
 .t-tot td { border-top: 2px solid var(--line-2); font-family: var(--font-mono); font-weight: 700; color: #fff; }
+
+/* cable runs — stacked, mobile-safe (never overflow horizontally) */
+.crun { border:1px solid var(--line); border-radius: var(--radius-s); padding:10px; margin-bottom:8px; background: var(--bg-1); }
+.crun > select { width:100%; margin-bottom:8px; }
+.crun-row { display:flex; gap:8px; align-items:center; }
+.crun-row input { flex:1 1 0; min-width:0; }
+.crun-row .x-btn { flex:none; font-size:18px; }
 
 /* =================== stats =================== */
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; }
@@ -329,7 +331,6 @@ td input, td select { padding: 6px 8px; font-size: 12.5px; }
     <div style="font-size:12px;color:#8a98a8;letter-spacing:.08em;">Loading the workspace…</div>
   </div>
   <noscript>This application requires JavaScript to be enabled.</noscript>
-
   <script>
 /* ===== js/data.js ===== */
 /* =====================================================================
@@ -419,7 +420,7 @@ const FAS_DATA = {
     { id: "data-cat6", name: "Cat6 U/UTP (network / FIDS)",          section: "4P 23AWG",  brand: "Commscope",  price: 0.9 }
   ],
 
-  currencies: ["USD", "EUR", "GBP", "SAR", "AED", "QAR", "KWD", "OMR", "BHD", "EGP", "JOD"],
+  currencies: ["USD", "EUR", "GBP", "SAR", "AED", "QAR", "KWD", "OMR", "BHD", "IQD", "EGP", "JOD"],
 
   /* ---------- Design standard reference ---------- */
   standard: {
@@ -1046,22 +1047,21 @@ const InfraSection = {
       host.appendChild(UI.el("div", { class: "empty" }, "No cable runs added yet."));
       return;
     }
-    const tbody = UI.el("tbody", {}, Store.state.cables.map(c => UI.el("tr", {}, [
-      UI.el("td", {}, UI.el("select", { onchange: e => { c.typeId = e.target.value; Store.save(); this.updateTotals(); } },
-        FAS_DATA.cables.map(ct => UI.el("option", { value: ct.id, selected: c.typeId === ct.id }, ct.name + " — " + ct.brand)))),
-      UI.el("td", {}, UI.el("input", { value: c.floor || "", placeholder: "Floor / zone",
-        oninput: e => { c.floor = e.target.value; Store.save(); } })),
-      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", class: "mono", value: c.length || "",
-        oninput: e => { c.length = Number(e.target.value) || 0; Store.save(); this.updateTotals(); } })),
-      UI.el("td", {}, UI.el("button", { class: "x-btn", onclick: () => { Store.removeCable(c.id); this.renderCables(); this.updateTotals(); } }, "✕"))
-    ])));
-    host.appendChild(UI.el("table", {}, [
-      UI.el("thead", {}, UI.el("tr", {}, [
-        UI.el("th", {}, "Cable Type / Section / Brand"), UI.el("th", {}, "Floor / Zone"),
-        UI.el("th", { class: "num" }, "Length (m)"), UI.el("th", {}, "")
-      ])),
-      tbody
-    ]));
+    host.appendChild(UI.el("div", { class: "subhead" }, "Cable Type / Section / Brand · Floor / Zone · Length (m)"));
+    Store.state.cables.forEach(c => {
+      const sel = UI.el("select", { onchange: e => { c.typeId = e.target.value; Store.save(); this.updateTotals(); } },
+        FAS_DATA.cables.map(ct => UI.el("option", { value: ct.id, selected: c.typeId === ct.id }, ct.name + " — " + ct.brand)));
+      const floor = UI.el("input", { value: c.floor || "", placeholder: "Floor / zone",
+        oninput: e => { c.floor = e.target.value; Store.save(); } });
+      const len = UI.el("input", { type: "number", min: "0", class: "mono", placeholder: "Length (m)", value: c.length || "",
+        oninput: e => { c.length = Number(e.target.value) || 0; Store.save(); this.updateTotals(); } });
+      const del = UI.el("button", { class: "x-btn", title: "Remove cable run",
+        onclick: () => { Store.removeCable(c.id); this.renderCables(); this.updateTotals(); } }, "✕");
+      host.appendChild(UI.el("div", { class: "crun" }, [
+        sel,
+        UI.el("div", { class: "crun-row" }, [ floor, len, del ])
+      ]));
+    });
   },
 
   /* ---------------- totals dashboard ---------------- */
