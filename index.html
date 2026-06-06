@@ -1,557 +1,1895 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAS - Ejaf Technology</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAS — Fire Alarm System Designer · Ejaf Technology</title>
+  <meta name="description" content="FAS — Fire Alarm System design, BOQ, PDF plan markup and professional reporting based on NFPA 72 (2025). Ejaf Technology. Powered by Siwar." />
 
-    <style>
-        /* Modern Professional Color Palette & Typography */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 
-        :root {
-            --primary-dark: #0f172a; /* Slate 900 */
-            --primary: #1e293b; /* Slate 800 */
-            --accent: #2563eb; /* Blue 600 */
-            --accent-hover: #1d4ed8; /* Blue 700 */
-            --bg-color: #f8fafc; /* Slate 50 */
-            --card-bg: #ffffff;
-            --text-main: #334155; /* Slate 700 */
-            --text-muted: #64748b; /* Slate 500 */
-            --border-color: #e2e8f0; /* Slate 200 */
-            --success: #10b981; /* Emerald 500 */
-            --danger: #ef4444; /* Red 500 */
-        }
+  <!-- Third-party libraries (loaded from CDN; require internet) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-        body { 
-            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background-color: var(--bg-color); 
-            color: var(--text-main); 
-            line-height: 1.5;
-        }
+  <style>
+/* =====================================================================
+   FAS — styles.css
+   Aesthetic: industrial control-panel. Deep slate, fine grid, signal-red
+   accent, mono data type. Professional engineering software look.
+   ===================================================================== */
 
-        header { 
-            background-color: var(--primary-dark); 
-            color: white; 
-            padding: 24px 20px; 
-            text-align: center; 
-            position: relative;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+:root {
+  --bg:        #0b0e13;
+  --bg-1:      #11161d;
+  --bg-2:      #161c25;
+  --bg-3:      #1c232e;
+  --inset:     #0e131a;
+  --line:      #28313d;
+  --line-2:    #323d4b;
+  --text:      #e7eef6;
+  --muted:     #8a98a8;
+  --muted-2:   #5f6b79;
+  --accent:    #ff463a;   /* signal red */
+  --accent-d:  #d8362c;
+  --amber:     #ffb020;
+  --cyan:      #3dd6c4;
+  --blue:      #5ab0ff;
+  --green:     #41cc7e;
+  --violet:    #9d8cff;
+  --radius:    10px;
+  --radius-s:  7px;
+  --shadow:    0 18px 40px -22px rgba(0,0,0,.75);
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-body:    'Manrope', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
 
-        .logo { 
-            position: absolute; 
-            top: 24px; 
-            left: 30px; 
-            font-weight: 700; 
-            font-size: 1.4em; 
-            letter-spacing: 0.5px; 
-            color: #e2e8f0;
-        }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background:
+    radial-gradient(900px 500px at 78% -8%, rgba(255,70,58,.10), transparent 60%),
+    radial-gradient(700px 500px at -5% 4%, rgba(61,214,196,.07), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+/* faint engineering grid */
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
 
-        header h1 { margin: 0 0 5px 0; font-size: 1.8em; font-weight: 600; }
-        header p { margin: 0; color: #94a3b8; font-size: 0.95em; }
+h1,h2,h3,h4 { font-family: var(--font-display); font-weight: 700; letter-spacing: -.01em; margin: 0; }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.mono { font-family: var(--font-mono); }
 
-        main { 
-            max-width: 1200px; 
-            margin: 30px auto; 
-            padding: 0 20px;
-        }
+/* =================== layout shell =================== */
+.app { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; position: relative; z-index: 1; }
 
-        .section-card { 
-            background: var(--card-bg); 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); 
-            margin-bottom: 30px; 
-            border: 1px solid var(--border-color);
-        }
+.sidebar {
+  background: linear-gradient(180deg, var(--bg-1), var(--bg));
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+}
+.brand { padding: 20px 18px 16px; border-bottom: 1px solid var(--line); }
+.brand .logo { display: flex; align-items: center; gap: 11px; }
+.brand .logo svg { width: 34px; height: 34px; flex: none; }
+.brand .logo .txt b { font-family: var(--font-display); font-size: 15px; letter-spacing: .14em; display: block; }
+.brand .logo .txt span { font-size: 10.5px; color: var(--muted); letter-spacing: .18em; text-transform: uppercase; }
+.brand .appname {
+  margin-top: 14px; display: flex; align-items: baseline; gap: 8px;
+}
+.brand .appname .big {
+  font-family: var(--font-display); font-weight: 800; font-size: 30px; letter-spacing: .04em;
+  background: linear-gradient(180deg, #fff, #c4ccd6); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.brand .appname .sub { font-size: 10px; color: var(--muted); letter-spacing: .2em; text-transform: uppercase; }
 
-        h2 { 
-            border-bottom: 2px solid var(--border-color); 
-            padding-bottom: 12px; 
-            color: var(--primary); 
-            margin-top: 0;
-            font-size: 1.4em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+.nav { padding: 12px 10px; display: flex; flex-direction: column; gap: 3px; flex: 1; overflow:auto; }
+.nav .sec-label { font-size: 9.5px; letter-spacing: .22em; color: var(--muted-2); text-transform: uppercase; padding: 12px 10px 6px; }
+.nav button {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  background: transparent; border: 1px solid transparent; color: var(--muted);
+  padding: 9px 11px; border-radius: var(--radius-s); cursor: pointer; font-family: var(--font-body);
+  font-size: 13.5px; font-weight: 600; transition: .16s;
+}
+.nav button .ico { width: 18px; text-align: center; font-size: 14px; color: var(--muted-2); transition:.16s; }
+.nav button:hover { background: var(--bg-2); color: var(--text); }
+.nav button.active {
+  background: linear-gradient(90deg, rgba(255,70,58,.16), rgba(255,70,58,.04));
+  border-color: rgba(255,70,58,.4); color: #fff;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.nav button.active .ico { color: var(--accent); }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
-        
-        label { 
-            font-weight: 600; 
-            margin-bottom: 8px; 
-            font-size: 0.85em; 
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+.sidebar .foot { padding: 14px 18px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+.sidebar .foot b { color: var(--text); font-weight: 700; }
+.sidebar .foot .pw { display:flex; align-items:center; gap:6px; }
+.sidebar .foot .dot { width:6px; height:6px; border-radius:50%; background: var(--green); box-shadow:0 0 8px var(--green); }
 
-        input, select { 
-            padding: 10px 14px; 
-            border: 1px solid var(--border-color); 
-            border-radius: 6px; 
-            font-family: inherit; 
-            font-size: 0.95em;
-            color: var(--text-main);
-            transition: all 0.2s;
-            background-color: #f8fafc;
-        }
+/* =================== main =================== */
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 14px; padding: 13px 26px;
+  background: rgba(13,17,23,.82); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .crumb { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.topbar .crumb b { color: var(--text); font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.topbar .pname { margin-left: 4px; color: var(--cyan); font-family: var(--font-mono); font-size: 12.5px; }
+.topbar .spacer { flex: 1; }
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-            background-color: #fff;
-        }
+.content { padding: 26px; max-width: 1180px; width: 100%; margin: 0 auto; animation: rise .4s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-        button { 
-            background-color: var(--accent); 
-            color: white; 
-            cursor: pointer; 
-            border: none; 
-            font-weight: 600; 
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 0.95em;
-            transition: all 0.2s;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
+.page-head { margin-bottom: 20px; }
+.page-head h2 { font-size: 23px; display: flex; align-items: center; gap: 12px; }
+.page-head h2 .tag { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--accent);
+  border: 1px solid rgba(255,70,58,.4); padding: 3px 8px; border-radius: 20px; font-family: var(--font-mono); }
+.page-head p { color: var(--muted); margin: 7px 0 0; max-width: 70ch; line-height: 1.55; }
 
-        button:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
-        
-        .btn-success { background-color: var(--success); }
-        .btn-success:hover { background-color: #059669; }
-        .btn-danger { background-color: var(--danger); }
-        .btn-danger:hover { background-color: #dc2626; }
-        .btn-secondary { background-color: var(--primary); }
-        .btn-secondary:hover { background-color: var(--primary-dark); }
-        
-        .floor-box { 
-            background: #f1f5f9; 
-            padding: 24px; 
-            border-radius: 8px; 
-            margin-bottom: 24px; 
-            border: 1px solid var(--border-color); 
-        }
-        
-        .floor-box h3 { margin-top: 0; color: var(--primary); font-size: 1.2em; }
+/* =================== cards / panels =================== */
+.card {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  margin-bottom: 18px;
+}
+.card > .card-h {
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 10px;
+}
+.card > .card-h h3 { font-size: 14px; letter-spacing: .02em; }
+.card > .card-h .k { font-family: var(--font-mono); font-size: 10px; color: var(--muted-2); letter-spacing:.15em; text-transform:uppercase; }
+.card > .card-b { padding: 18px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
 
-        .room-box { 
-            background: #fff; 
-            padding: 20px; 
-            border-radius: 8px; 
-            margin-top: 16px; 
-            border-left: 5px solid var(--accent); 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04); 
-            border-top: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-        }
+/* =================== form controls =================== */
+label.fld { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+label.fld .hint { font-weight: 500; color: var(--muted-2); font-size: 11px; }
+input, select, textarea {
+  background: var(--inset); border: 1px solid var(--line-2); color: var(--text);
+  border-radius: var(--radius-s); padding: 9px 11px; font-family: var(--font-body); font-size: 13.5px;
+  outline: none; transition: .15s; width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,70,58,.14); }
+input.mono, td input { font-family: var(--font-mono); }
+input[type=number] { -moz-appearance: textfield; }
+select { appearance: none; background-image:
+  linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 16px, calc(100% - 11px) 16px; background-size: 5px 5px; background-repeat: no-repeat; }
 
-        .room-section-title {
-            font-size: 0.9em;
-            color: var(--text-muted);
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: block;
-        }
+/* segmented toggle */
+.seg { display: inline-flex; background: var(--inset); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px; }
+.seg button {
+  border: none; background: transparent; color: var(--muted); padding: 8px 18px; border-radius: 999px;
+  cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: 12.5px; letter-spacing: .04em; transition: .16s;
+}
+.seg button.on { background: linear-gradient(180deg, var(--accent), var(--accent-d)); color: #fff; box-shadow: 0 6px 16px -8px var(--accent); }
 
-        .room-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 16px; 
-            align-items: end; 
-        }
-        
-        .dashboard { 
-            background: var(--primary); 
-            color: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            margin-top: 30px; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border-radius: var(--radius-s); padding: 10px 16px; font-family: var(--font-display);
+  font-weight: 700; font-size: 13px; letter-spacing: .02em; border: 1px solid var(--line-2);
+  background: var(--bg-3); color: var(--text); transition: .15s;
+}
+.btn:hover { border-color: var(--muted-2); transform: translateY(-1px); }
+.btn.primary { background: linear-gradient(180deg, var(--accent), var(--accent-d)); border-color: var(--accent-d); color: #fff; box-shadow: 0 10px 24px -12px var(--accent); }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 6px 11px; font-size: 12px; }
+.btn.icon { padding: 8px 10px; }
+.btn.green { background: linear-gradient(180deg, #2ea864, #1f8a4f); border-color:#1f8a4f; color:#fff; }
+.btn.danger { color: var(--accent); border-color: rgba(255,70,58,.4); background: transparent; }
+.btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
 
-        .dashboard h3 { margin-top: 0; color: #f8fafc; font-size: 1.3em; }
-        
-        .dash-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 16px; 
-            text-align: center; 
-        }
-        
-        .dash-item { 
-            background: rgba(255,255,255,0.1); 
-            padding: 20px 15px; 
-            border-radius: 8px; 
-            border: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.85em;
-            font-weight: 500;
-            color: #cbd5e1;
-        }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
-        .dash-item span { 
-            display: block; 
-            font-size: 2em; 
-            font-weight: 700; 
-            margin-top: 8px; 
-            color: white;
-        }
+/* =================== tables =================== */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600; padding: 10px 10px; border-bottom: 1px solid var(--line-2); white-space: nowrap;
+}
+tbody td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:hover { background: rgba(255,255,255,.018); }
+td.num, th.num { text-align: right; font-family: var(--font-mono); }
+td input, td select { padding: 6px 8px; font-size: 12.5px; }
+.t-tot td { border-top: 2px solid var(--line-2); font-family: var(--font-mono); font-weight: 700; color: #fff; }
 
-        .tot-price-container {
-            margin-top: 24px; 
-            border-top: 1px solid rgba(255,255,255,0.1); 
-            padding-top: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+/* =================== stats =================== */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; }
+.stat {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1)); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 15px 16px; position: relative; overflow: hidden;
+}
+.stat::after { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--c, var(--accent)); }
+.stat .v { font-family: var(--font-mono); font-size: 27px; font-weight: 700; color: #fff; line-height: 1; }
+.stat .l { font-size: 11px; color: var(--muted); margin-top: 7px; letter-spacing: .04em; text-transform: uppercase; }
 
-        .tot-price-container h3 { margin: 0; font-size: 1.6em; color: var(--success); }
+/* device chips / palette */
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: var(--inset); font-size: 12px; font-weight: 600;
+}
+.chip .dot { width: 10px; height: 10px; border-radius: 50%; }
 
-        canvas { 
-            border: 2px dashed var(--border-color); 
-            margin-top: 20px; 
-            border-radius: 8px; 
-            cursor: crosshair; 
-            background-color: #f8fafc;
-        }
+.dev-icon {
+  width: 24px; height: 24px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #061018; flex: none;
+}
 
-        .canvas-tools { margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
-        
-        footer { 
-            text-align: center; 
-            padding: 24px; 
-            font-size: 0.9em;
-            color: var(--text-muted); 
-            background: white; 
-            margin-top: 50px; 
-            border-top: 1px solid var(--border-color); 
-        }
+/* floor block */
+.floor { border:1px solid var(--line); border-radius: var(--radius); margin-bottom: 14px; background: var(--bg-1); }
+.floor > .fh { display:flex; align-items:center; gap:12px; padding: 12px 15px; border-bottom:1px solid var(--line); cursor:pointer; }
+.floor > .fh .fname input { font-family: var(--font-display); font-weight: 700; font-size: 15px; background:transparent; border:1px solid transparent; }
+.floor > .fh .fname input:focus { border-color: var(--line-2); }
+.floor > .fh .meta { margin-left:auto; display:flex; gap:14px; color:var(--muted); font-family:var(--font-mono); font-size:11.5px; }
+.floor > .fh .meta b { color: var(--cyan); }
+.floor > .fb { padding: 15px; display:none; }
+.floor.open > .fb { display:block; }
+.floor .caret { transition:.2s; color:var(--muted-2); }
+.floor.open .caret { transform: rotate(90deg); }
 
-        .results-box a { 
-            display: inline-flex; 
-            align-items: center;
-            padding: 10px 16px;
-            background: #f1f5f9;
-            border-radius: 6px;
-            margin-top: 12px; 
-            margin-right: 12px;
-            color: var(--accent); 
-            font-weight: 600; 
-            text-decoration: none;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s;
-        }
+.subhead { font-family: var(--font-mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color: var(--muted); margin: 4px 0 10px; }
 
-        .results-box a:hover { background: #e2e8f0; }
+/* notice / disclaimer */
+.notice {
+  display:flex; gap:11px; padding: 12px 14px; border-radius: var(--radius-s);
+  background: rgba(255,176,32,.08); border: 1px solid rgba(255,176,32,.3); color: #ffd98a; font-size: 12.5px; line-height:1.5;
+}
+.notice .i { color: var(--amber); flex:none; font-weight:700; }
+.notice.info { background: rgba(90,176,255,.08); border-color: rgba(90,176,255,.3); color:#bfe0ff; }
+.notice.info .i { color: var(--blue); }
 
-        hr.divider {
-            border: 0;
-            height: 1px;
-            background: var(--border-color);
-            margin: 20px 0;
-        }
-    </style>
+.empty { text-align:center; padding: 30px; color: var(--muted-2); border: 1px dashed var(--line-2); border-radius: var(--radius); }
+
+/* =================== planner =================== */
+.planner-wrap { display:grid; grid-template-columns: 210px 1fr 220px; gap: 14px; align-items:start; }
+.palette-item, .layer-item {
+  display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:var(--radius-s);
+  border:1px solid var(--line); background: var(--bg-1); cursor:pointer; margin-bottom:6px; font-size:12.5px; transition:.13s;
+}
+.palette-item:hover { border-color: var(--muted-2); }
+.palette-item.armed { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,70,58,.2); background: rgba(255,70,58,.07); }
+.layer-item { cursor:default; justify-content:space-between; }
+.layer-item .lcount { font-family:var(--font-mono); color:var(--cyan); }
+.layer-item input { width:auto; }
+.canvas-stage {
+  background: var(--inset); border:1px solid var(--line); border-radius: var(--radius);
+  overflow:auto; position:relative; min-height: 460px; display:flex; align-items:center; justify-content:center;
+}
+.canvas-stage .ph { color: var(--muted-2); text-align:center; padding:40px; }
+#planner-canvas { display:block; }
+.legend-box { font-size:12px; }
+.legend-box .lg { display:flex; align-items:center; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--line); }
+.legend-box .lg b { font-family:var(--font-mono); color:#fff; }
+
+/* file drop */
+.drop {
+  border: 2px dashed var(--line-2); border-radius: var(--radius); padding: 22px; text-align:center;
+  color: var(--muted); cursor:pointer; transition:.15s; background: var(--inset);
+}
+.drop:hover, .drop.drag { border-color: var(--accent); color: var(--text); background: rgba(255,70,58,.04); }
+
+/* misc */
+.row-flex { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.pill { font-family:var(--font-mono); font-size:10px; padding:3px 8px; border-radius:20px; border:1px solid var(--line-2); color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+.pill.addr { color:var(--cyan); border-color: rgba(61,214,196,.4); }
+.pill.conv { color:var(--amber); border-color: rgba(255,176,32,.4); }
+.muted { color: var(--muted); }
+.sep { height:1px; background: var(--line); margin: 16px 0; }
+.x-btn { background:transparent;border:none;color:var(--muted-2);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:5px; }
+.x-btn:hover { color:var(--accent); background: rgba(255,70,58,.1); }
+
+::-webkit-scrollbar { width:11px; height:11px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 10px; border: 3px solid var(--bg); }
+
+/* toast */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--bg-3); border:1px solid var(--line-2); color:var(--text); padding: 12px 20px;
+  border-radius: 999px; box-shadow: var(--shadow); opacity:0; pointer-events:none; transition:.25s; z-index:200; font-weight:600; font-size:13px; }
+#toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+#toast.ok { border-color: var(--green); }
+#toast.err { border-color: var(--accent); }
+
+@media (max-width: 1080px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: relative; height:auto; flex-direction: row; flex-wrap:wrap; }
+  .nav { flex-direction: row; flex-wrap:wrap; flex:1 1 100%; }
+  .nav .sec-label { width:100%; }
+  .planner-wrap { grid-template-columns: 1fr; }
+  .grid-2,.grid-3,.grid-4 { grid-template-columns: 1fr; }
+}
+
+  </style>
 </head>
 <body>
+  <div style="height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:'Archivo',sans-serif;">
+    <div style="letter-spacing:.22em;font-weight:800;font-size:30px;color:#e7eef6;">F A S</div>
+    <div style="font-size:12px;color:#8a98a8;letter-spacing:.08em;">Loading the workspace…</div>
+  </div>
+  <noscript>This application requires JavaScript to be enabled.</noscript>
 
-    <header>
-        <div class="logo">Ejaf Technology</div>
-        <h1>FAS Designer & Estimator</h1>
-        <p>Professional Fire Alarm System Infrastructure Tool</p>
-    </header>
+  <script>
+/* ===== js/data.js ===== */
+/* =====================================================================
+   FAS  —  Fire Alarm System Designer
+   data.js : static catalogs (brands, devices, cables, defaults)
+   Powered by Siwar  |  Ejaf Technology
+   ---------------------------------------------------------------------
+   NOTE on links: each brand "site" / "docs" URL points to the brand's
+   OFFICIAL website where datasheets & manuals are published. They are
+   fully editable here. Add exact PDF links any time you like.
+   ===================================================================== */
 
-    <main>
-        <section class="section-card" id="sec-equipment">
-            <h2>1. FAS Equipment Selection</h2>
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>Brand / Vendor:</label>
-                    <select id="brandSelect">
-                        <option value="Eaton">Eaton</option>
-                        <option value="Zeta">Zeta</option>
-                        <option value="Apollo">Apollo</option>
-                        <option value="Siemens">Siemens</option>
-                        <option value="Hikvision">Hikvision</option>
-                        <option value="Dahua">Dahua</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>System Architecture:</label>
-                    <select id="systemType">
-                        <option value="Addressable">Addressable</option>
-                        <option value="Conventional">Conventional</option>
-                    </select>
-                </div>
-            </div>
-            <button onclick="getDatasheets()">Fetch Datasheets & Manuals</button>
-            <div id="datasheetResults" class="results-box"></div>
-        </section>
+const FAS_DATA = {
 
-        <section class="section-card" id="report-content">
-            <h2>2. FAS Infrastructure Layout</h2>
-            <div id="floorsContainer"></div>
-            <button class="btn-success" onclick="addFloor()" style="width: 100%; margin-top: 10px;">+ Add New Floor</button>
+  /* ---------- FAS  : approved global fire-detection brands ---------- */
+  brands: [
+    { id: "apollo",     name: "Apollo Fire Detectors", type: "both",        country: "UK",
+      site: "https://www.apollo-fire.co.uk",            docs: "https://www.apollo-fire.co.uk/products" },
+    { id: "eaton",      name: "Eaton (Cooper / Menvier)", type: "both",     country: "USA/UK",
+      site: "https://www.eaton.com",                    docs: "https://www.eaton.com/us/en-us/catalog/fire-detection.html" },
+    { id: "hochiki",    name: "Hochiki Europe",        type: "both",        country: "JP/UK",
+      site: "https://www.hochikieurope.com",            docs: "https://www.hochikieurope.com/products" },
+    { id: "siemens",    name: "Siemens",               type: "addressable", country: "DE",
+      site: "https://www.siemens.com",                  docs: "https://www.siemens.com/global/en/products/buildings/fire-safety.html" },
+    { id: "honeywell",  name: "Honeywell",             type: "both",        country: "USA",
+      site: "https://buildings.honeywell.com",          docs: "https://buildings.honeywell.com/us/en/products/by-category/fire" },
+    { id: "notifier",   name: "Notifier (Honeywell)",  type: "addressable", country: "USA",
+      site: "https://www.notifier.com",                 docs: "https://www.notifier.com/en-US/Pages/products.aspx" },
+    { id: "gent",       name: "Gent (Honeywell)",      type: "addressable", country: "UK",
+      site: "https://www.gent.co.uk",                   docs: "https://www.gent.co.uk/products" },
+    { id: "morley",     name: "Morley-IAS (Honeywell)",type: "both",        country: "UK",
+      site: "https://www.morley-ias.co.uk",             docs: "https://www.morley-ias.co.uk/en-gb/products" },
+    { id: "advanced",   name: "Advanced (Honeywell)",  type: "addressable", country: "UK",
+      site: "https://www.advancedco.com",               docs: "https://www.advancedco.com/products" },
+    { id: "kentec",     name: "Kentec Electronics",    type: "both",        country: "UK",
+      site: "https://www.kentec.co.uk",                 docs: "https://www.kentec.co.uk/products" },
+    { id: "edwards",    name: "Edwards / EST (Carrier)", type: "both",      country: "USA",
+      site: "https://www.edwardsfiresafety.com",        docs: "https://www.edwardsfiresafety.com/products" },
+    { id: "systemsensor",name:"System Sensor (Honeywell)",type:"both",      country: "USA",
+      site: "https://www.systemsensor.com",             docs: "https://www.systemsensor.com/en-us/Pages/Products.aspx" },
+    { id: "mircom",     name: "Mircom",                type: "both",        country: "CA",
+      site: "https://www.mircom.com",                   docs: "https://www.mircom.com/products" },
+    { id: "simplex",    name: "Simplex (Johnson Controls)", type: "addressable", country: "USA",
+      site: "https://www.simplexfire.com",              docs: "https://www.simplexfire.com/en/us/Pages/products.aspx" },
+    { id: "fike",       name: "Fike",                  type: "both",        country: "USA",
+      site: "https://www.fike.com",                     docs: "https://www.fike.com/products" },
+    { id: "ziton",      name: "Ziton",                 type: "addressable", country: "DK",
+      site: "https://www.ziton.com",                    docs: "https://www.ziton.com/products" },
+    { id: "bosch",      name: "Bosch",                 type: "both",        country: "DE",
+      site: "https://www.boschsecurity.com",            docs: "https://www.boschsecurity.com/xc/en/products/fire-alarm-systems/" },
+    { id: "zeta",       name: "Zeta Alarm Systems",    type: "both",        country: "UK",
+      site: "https://www.zetaalarmsystems.com",         docs: "https://www.zetaalarmsystems.com/product-category/all-products/" },
+    { id: "hikvision",  name: "Hikvision",             type: "both",        country: "CN",
+      site: "https://www.hikvision.com",                docs: "https://www.hikvision.com/en/products/" },
+    { id: "dahua",      name: "Dahua Technology",      type: "both",        country: "CN",
+      site: "https://www.dahuasecurity.com",            docs: "https://www.dahuasecurity.com/products" }
+  ],
 
-            <div class="dashboard">
-                <h3>Project Totals & BOQ Summary</h3>
-                <div class="dash-grid">
-                    <div class="dash-item">Smoke Detectors<span id="tot-smoke">0</span></div>
-                    <div class="dash-item">Heat Detectors<span id="tot-heat">0</span></div>
-                    <div class="dash-item">Sounders<span id="tot-sounder">0</span></div>
-                    <div class="dash-item">Callpoints<span id="tot-callpoint">0</span></div>
-                    <div class="dash-item">Modules (MCIM)<span id="tot-module">0</span></div>
-                    <div class="dash-item">Repeaters<span id="tot-repeater">0</span></div>
-                    <div class="dash-item">Cable Length (m)<span id="tot-cable">0</span></div>
-                    <div class="dash-item">Fire Panels<span id="tot-panel">1</span></div>
-                </div>
-                <div class="tot-price-container">
-                    <span>Total Estimated System Cost</span>
-                    <h3>$<span id="tot-price">0.00</span></h3>
-                </div>
-            </div>
-        </section>
+  /* ---------- Device catalog ----------
+     coverage = max ceiling area (m2) covered by ONE detector.
+     Spot detector default follows NFPA 72 (2025): 30 ft (9.1 m) smooth-
+     ceiling grid ≈ 84 m². Editable in-app — VERIFY per code & AHJ.       */
+  devices: [
+    { id: "smoke",        name: "Smoke Detector",        short: "SD",  symbol: "S",  color: "#3dd6c4", coverage: 84,  price: 28,  group: "Detection" },
+    { id: "heat",         name: "Heat Detector",         short: "HD",  symbol: "H",  color: "#ff8c42", coverage: 50,  price: 24,  group: "Detection" },
+    { id: "multi",        name: "Multi-Sensor Detector", short: "MSD", symbol: "M",  color: "#9d8cff", coverage: 84,  price: 38,  group: "Detection" },
+    { id: "beam",         name: "Beam Detector",         short: "BD",  symbol: "B",  color: "#5ab0ff", coverage: 1400,price: 480, group: "Detection" },
+    { id: "mcp",          name: "Manual Call Point",     short: "MCP", symbol: "C",  color: "#ff4438", coverage: 0,   price: 18,  group: "Manual" },
+    { id: "sounder",      name: "Sounder",               short: "SND", symbol: "((·))", color: "#ffb020", coverage: 0, price: 22, group: "Notification" },
+    { id: "sounderstrobe",name: "Sounder + Strobe",      short: "S/S", symbol: "SB", color: "#ffd23f", coverage: 0,   price: 34,  group: "Notification" },
+    { id: "beacon",       name: "Beacon / Strobe",       short: "BCN", symbol: "*",  color: "#ff5fa8", coverage: 0,   price: 26,  group: "Notification" },
+    { id: "panel",        name: "Fire Alarm Panel (FACP)", short: "FACP", symbol: "▦", color: "#ffffff", coverage: 0, price: 1200, group: "Control" },
+    { id: "repeater",     name: "Repeater Panel",        short: "RPT", symbol: "R",  color: "#7ee787", coverage: 0,   price: 420, group: "Control" },
+    { id: "mcim",         name: "MCIM / Interface Module", short: "MCIM", symbol: "I", color: "#79c0ff", coverage: 0, price: 65, group: "Control" },
+    { id: "gsm",          name: "GSM Dialer / Module",   short: "GSM", symbol: "G",  color: "#d2a8ff", coverage: 0,   price: 180, group: "Control" },
+    { id: "io",           name: "Input / Output Module", short: "I/O", symbol: "IO", color: "#a5d6ff", coverage: 0,   price: 55,  group: "Control" }
+  ],
 
-        <section class="section-card">
-            <h2>3. Professional Reports Export</h2>
-            <div class="grid-2">
-                <button class="btn-danger" onclick="exportPDF()">Export PDF Engineering Report</button>
-                <button onclick="exportExcel()">Export Excel Financial BOQ</button>
-            </div>
-        </section>
+  /* ---------- Cable catalog ---------- (price = per metre) */
+  cables: [
+    { id: "fp200-2c-1.5", name: "FP200 Gold 2C 1.5mm² (Fire Rated)", section: "2C 1.5mm²", brand: "Prysmian",  price: 1.8 },
+    { id: "fp200-2c-2.5", name: "FP200 Gold 2C 2.5mm² (Fire Rated)", section: "2C 2.5mm²", brand: "Prysmian",  price: 2.4 },
+    { id: "fp200-4c-1.5", name: "FP200 Gold 4C 1.5mm² (Fire Rated)", section: "4C 1.5mm²", brand: "Prysmian",  price: 2.9 },
+    { id: "fire-tuff-2c-1.5", name: "FireTuff 2C 1.5mm² (LSZH FR)",  section: "2C 1.5mm²", brand: "Draka",     price: 1.9 },
+    { id: "mineral-2c-1.5", name: "MICC Mineral 2C 1.5mm²",         section: "2C 1.5mm²", brand: "Wrexham",    price: 4.2 },
+    { id: "screened-2c-1.0", name: "Screened Loop 2C 1.0mm²",       section: "2C 1.0mm²", brand: "Belden",     price: 1.4 },
+    { id: "data-cat6", name: "Cat6 U/UTP (network / FIDS)",          section: "4P 23AWG",  brand: "Commscope",  price: 0.9 }
+  ],
 
-        <section class="section-card">
-            <h2>4. Visual Floor Plan Design</h2>
-            <p style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 20px;">Upload your AutoCAD/PDF floor plan as an image (JPG/PNG), then drag and drop the FAS components to map out the infrastructure.</p>
-            
-            <input type="file" id="planUpload" accept="image/*" onchange="uploadPlan(event)" style="margin-bottom: 15px; width: 100%; max-width: 400px;">
-            
-            <div class="canvas-tools">
-                <button class="btn-secondary" onclick="addShape('smoke')">🔴 Add Smoke Det.</button>
-                <button class="btn-secondary" onclick="addShape('sounder')">🔵 Add Sounder</button>
-                <button class="btn-secondary" onclick="addShape('callpoint')">🟢 Add Callpoint</button>
-                <button class="btn-danger" onclick="clearCanvas()" style="margin-left: auto;">🗑️ Clear Workspace</button>
-            </div>
-            
-            <canvas id="floorCanvas" width="1150" height="600" style="max-width: 100%; height: auto;"></canvas>
-        </section>
+  currencies: ["USD", "EUR", "GBP", "SAR", "AED", "QAR", "KWD", "OMR", "BHD", "EGP", "JOD"],
 
-    </main>
+  /* ---------- Design standard reference ---------- */
+  standard: {
+    code: "NFPA 72 (2025)",
+    title: "National Fire Alarm and Signaling Code, 2025 Edition",
+    url: "https://www.nfpa.org/product/nfpa-72-national-fire-alarm-and-signaling-code/p0072code",
+    notes: [
+      "Spot smoke detectors: nominal 30 ft (9.1 m) spacing on smooth ceilings → ≈ 900 ft² (84 m²) per detector.",
+      "0.7 (Point-Seven) rule: every ceiling point within 0.7 × spacing (21 ft / 6.4 m for smoke).",
+      "Spacing is unchanged for smooth ceilings up to 40 ft (12.2 m); above that a performance-based design is required.",
+      "Heat detectors use the product's LISTED spacing (15–50 ft) with ceiling-height reduction factors (NFPA 72 Ch.17).",
+      "Manual call points: within 1.5 m (5 ft) of exits; max travel distance to a station 61 m (200 ft) per floor.",
+      "These are indicative design aids — verify the full design against NFPA 72 (2025) and the AHJ."
+    ]
+  },
 
-    <footer>
-        Powered by siwar | Ejaf Technology &copy; 2026 | Engineered for Precision
-    </footer>
+  /* ---------- Default coverage settings (editable in app) ----------
+     NFPA 72 (2025): 30 ft (9.1 m) nominal smooth-ceiling grid ≈ 84 m². */
+  defaultCoverage: { smoke: 84, heat: 50, multi: 84 }
+};
 
-    <script>
-        // --- 1. DATASHEETS LOGIC ---
-        function getDatasheets() {
-            const brand = document.getElementById('brandSelect').value;
-            const res = document.getElementById('datasheetResults');
-            res.innerHTML = `
-                <a href="#" onclick="alert('Preparing to download ${brand} Datasheet...')">📄 ${brand} Official Datasheet</a>
-                <a href="#" onclick="alert('Preparing to download ${brand} Installation Manual...')">📘 ${brand} Installation Manual</a>
-            `;
-        }
+/* convenience lookups */
+FAS_DATA.deviceById = id => FAS_DATA.devices.find(d => d.id === id);
+FAS_DATA.brandById  = id => FAS_DATA.brands.find(b => b.id === id);
+FAS_DATA.cableById  = id => FAS_DATA.cables.find(c => c.id === id);
 
-        // --- 2. INFRASTRUCTURE & CALCULATION LOGIC ---
-        let floorCount = 0;
 
-        // Base Prices for Calculation (Editable)
-        const prices = { smoke: 25, heat: 20, sounder: 35, callpoint: 15, module: 45, repeater: 250, cablePerMeter: 1.2, panel: 800 };
+/* ===== js/state.js ===== */
+/* =====================================================================
+   state.js : application state, persistence (localStorage) & the
+              calculation engine (totals + BOQ).
+   ===================================================================== */
 
-        function addFloor() {
-            floorCount++;
-            const fId = `floor-${floorCount}`;
-            const floorHTML = `
-                <div class="floor-box" id="${fId}">
-                    <h3>Floor Level ${floorCount}</h3>
-                    <div id="rooms-${fId}"></div>
-                    <button class="btn-secondary" onclick="addRoom('${fId}')" style="margin-top: 15px; font-size: 0.85em;">+ Add New Room</button>
-                </div>
-            `;
-            document.getElementById('floorsContainer').insertAdjacentHTML('beforeend', floorHTML);
-            addRoom(fId); 
-        }
+const FAS_STORE_KEY = "fas_app_state_v1";
 
-        function addRoom(floorId) {
-            const rId = `room-${Math.random().toString(36).substr(2, 9)}`;
-            const roomHTML = `
-                <div class="room-box" id="${rId}">
-                    <span class="room-section-title">NFPA 72 Area Calculator</span>
-                    <div class="room-grid">
-                        <div class="form-group"><label>Length (m):</label><input type="number" class="r-len" oninput="calcRoom('${rId}')" placeholder="0"></div>
-                        <div class="form-group"><label>Width (m):</label><input type="number" class="r-wid" oninput="calcRoom('${rId}')" placeholder="0"></div>
-                        <div class="form-group"><label>Suggested Smoke:</label><input type="number" class="r-auto" disabled value="0" style="background: #e2e8f0; font-weight: bold; color: var(--accent);"></div>
-                    </div>
-                    
-                    <hr class="divider">
-                    
-                    <span class="room-section-title">Hardware Deployment & Cabling</span>
-                    <div class="room-grid">
-                        <div class="form-group"><label>Smoke Det.:</label><input type="number" class="q-smoke item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                        <div class="form-group"><label>Heat Det.:</label><input type="number" class="q-heat item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                        <div class="form-group"><label>Sounders:</label><input type="number" class="q-sounder item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                        <div class="form-group"><label>Callpoints:</label><input type="number" class="q-callpoint item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                        <div class="form-group"><label>MCIM/GSM:</label><input type="number" class="q-module item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                        <div class="form-group"><label>Repeaters:</label><input type="number" class="q-repeater item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                        <div class="form-group"><label>Cable Spec:</label><select><option>FP200 1.5mm</option><option>FP200 2.5mm</option></select></div>
-                        <div class="form-group"><label>Cable Len(m):</label><input type="number" class="q-cable item-qty" value="0" min="0" oninput="updateTotals()"></div>
-                    </div>
-                </div>
-            `;
-            document.getElementById(`rooms-${floorId}`).insertAdjacentHTML('beforeend', roomHTML);
-        }
+const Store = {
+  state: null,
 
-        function calcRoom(roomId) {
-            const room = document.getElementById(roomId);
-            const len = parseFloat(room.querySelector('.r-len').value) || 0;
-            const wid = parseFloat(room.querySelector('.r-wid').value) || 0;
-            const area = len * wid;
-            
-            // NFPA 72: Approx 83.6 sqm per standard smoke detector
-            const suggested = area > 0 ? Math.ceil(area / 83.6) : 0;
-            room.querySelector('.r-auto').value = suggested;
-            
-            const manualSmoke = room.querySelector('.q-smoke');
-            if(parseFloat(manualSmoke.value) === 0 || manualSmoke.value === "") {
-                manualSmoke.value = suggested;
-            }
-            updateTotals();
-        }
+  /* ---------- defaults ---------- */
+  blank() {
+    const pricing = {};
+    FAS_DATA.devices.forEach(d => pricing[d.id] = d.price);
+    FAS_DATA.cables.forEach(c => pricing["cable_" + c.id] = c.price);
+    return {
+      project: {
+        name: "", client: "", location: "", consultant: "",
+        engineer: "", reference: "", date: new Date().toISOString().slice(0, 10),
+        currency: "USD"
+      },
+      fas: { brand: "apollo", type: "addressable" },
+      coverage: { ...FAS_DATA.defaultCoverage },
+      floors: [],
+      cables: [],
+      panels: 1,
+      pricing,
+      planner: { plans: [] }
+    };
+  },
 
-        function updateTotals() {
-            let tSmoke = 0, tHeat = 0, tSounder = 0, tCallpoint = 0, tModule = 0, tRepeater = 0, tCable = 0;
-            
-            document.querySelectorAll('.q-smoke').forEach(el => tSmoke += parseFloat(el.value) || 0);
-            document.querySelectorAll('.q-heat').forEach(el => tHeat += parseFloat(el.value) || 0);
-            document.querySelectorAll('.q-sounder').forEach(el => tSounder += parseFloat(el.value) || 0);
-            document.querySelectorAll('.q-callpoint').forEach(el => tCallpoint += parseFloat(el.value) || 0);
-            document.querySelectorAll('.q-module').forEach(el => tModule += parseFloat(el.value) || 0);
-            document.querySelectorAll('.q-repeater').forEach(el => tRepeater += parseFloat(el.value) || 0);
-            document.querySelectorAll('.q-cable').forEach(el => tCable += parseFloat(el.value) || 0);
+  load() {
+    try {
+      const raw = localStorage.getItem(FAS_STORE_KEY);
+      if (raw) {
+        this.state = Object.assign(this.blank(), JSON.parse(raw));
+        // make sure nested defaults exist
+        this.state.planner = this.state.planner || { plans: [] };
+        this.state.pricing = Object.assign(this.blank().pricing, this.state.pricing || {});
+      } else {
+        this.state = this.blank();
+      }
+    } catch (e) {
+      console.warn("Could not load state, starting fresh.", e);
+      this.state = this.blank();
+    }
+    return this.state;
+  },
 
-            // Panels: 1 panel per 250 addressable devices
-            const totalDevices = tSmoke + tHeat + tSounder + tCallpoint + tModule;
-            const tPanel = totalDevices > 0 ? Math.ceil(totalDevices / 250) : 1;
+  save() {
+    try { localStorage.setItem(FAS_STORE_KEY, JSON.stringify(this.state)); }
+    catch (e) { console.warn("Save failed (storage full / disabled).", e); }
+  },
 
-            document.getElementById('tot-smoke').innerText = tSmoke;
-            document.getElementById('tot-heat').innerText = tHeat;
-            document.getElementById('tot-sounder').innerText = tSounder;
-            document.getElementById('tot-callpoint').innerText = tCallpoint;
-            document.getElementById('tot-module').innerText = tModule;
-            document.getElementById('tot-repeater').innerText = tRepeater;
-            document.getElementById('tot-cable').innerText = tCable;
-            document.getElementById('tot-panel').innerText = tPanel;
+  reset() { this.state = this.blank(); this.save(); },
 
-            // Price Calculation
-            const totalPrice = (tSmoke * prices.smoke) + (tHeat * prices.heat) + (tSounder * prices.sounder) + 
-                               (tCallpoint * prices.callpoint) + (tModule * prices.module) + 
-                               (tRepeater * prices.repeater) + (tCable * prices.cablePerMeter) + 
-                               (tPanel * prices.panel);
-            
-            document.getElementById('tot-price').innerText = totalPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }
+  /* ---------- floor / room helpers ---------- */
+  uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); },
 
-        window.onload = () => { addFloor(); initCanvas(); };
+  addFloor(name) {
+    const counts = {};
+    FAS_DATA.devices.forEach(d => counts[d.id] = 0);
+    this.state.floors.push({
+      id: this.uid(),
+      name: name || ("Floor " + (this.state.floors.length + 1)),
+      rooms: [],
+      counts
+    });
+    this.save();
+  },
 
-        // --- 3. EXPORT LOGIC ---
-        function exportPDF() {
-            const element = document.getElementById('report-content');
-            const opt = {
-                margin:       0.4,
-                filename:     'Ejaf_Tech_FAS_Report.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: "#ffffff" },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(element).save();
-        }
+  removeFloor(id) {
+    this.state.floors = this.state.floors.filter(f => f.id !== id);
+    this.save();
+  },
 
-        function exportExcel() {
-            const brand = document.getElementById('brandSelect').value;
-            const sysType = document.getElementById('systemType').value;
-            const data = [
-                ["EJAF TECHNOLOGY - FIRE ALARM SYSTEM BOQ"],
-                ["Selected Brand:", brand],
-                ["Architecture:", sysType],
-                [],
-                ["Item Description", "Quantity", "Unit Price ($)", "Total ($)"],
-                ["Smoke Detector", document.getElementById('tot-smoke').innerText, prices.smoke, parseFloat(document.getElementById('tot-smoke').innerText) * prices.smoke],
-                ["Heat Detector", document.getElementById('tot-heat').innerText, prices.heat, parseFloat(document.getElementById('tot-heat').innerText) * prices.heat],
-                ["Sounder", document.getElementById('tot-sounder').innerText, prices.sounder, parseFloat(document.getElementById('tot-sounder').innerText) * prices.sounder],
-                ["Manual Callpoint", document.getElementById('tot-callpoint').innerText, prices.callpoint, parseFloat(document.getElementById('tot-callpoint').innerText) * prices.callpoint],
-                ["Control/Monitor Module", document.getElementById('tot-module').innerText, prices.module, parseFloat(document.getElementById('tot-module').innerText) * prices.module],
-                ["Repeater Panel", document.getElementById('tot-repeater').innerText, prices.repeater, parseFloat(document.getElementById('tot-repeater').innerText) * prices.repeater],
-                ["Fire-Resistant Cable (m)", document.getElementById('tot-cable').innerText, prices.cablePerMeter, parseFloat(document.getElementById('tot-cable').innerText) * prices.cablePerMeter],
-                ["Main Fire Alarm Panel", document.getElementById('tot-panel').innerText, prices.panel, parseFloat(document.getElementById('tot-panel').innerText) * prices.panel],
-                [],
-                ["", "", "GRAND TOTAL ($)", document.getElementById('tot-price').innerText.replace(/,/g, '')]
-            ];
+  addRoom(floorId, room) {
+    const f = this.state.floors.find(x => x.id === floorId);
+    if (!f) return;
+    f.rooms.push(Object.assign({ id: this.uid(), name: "", length: 0, width: 0 }, room));
+    this.recalcFloorDetectors(floorId);
+    this.save();
+  },
 
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "FAS BOQ");
-            XLSX.writeFile(wb, "FAS_BOQ_EjafTech.xlsx");
-        }
+  removeRoom(floorId, roomId) {
+    const f = this.state.floors.find(x => x.id === floorId);
+    if (!f) return;
+    f.rooms = f.rooms.filter(r => r.id !== roomId);
+    this.recalcFloorDetectors(floorId);
+    this.save();
+  },
 
-        // --- 4. FABRIC.JS FLOOR PLAN LOGIC ---
-        let canvas;
-        function initCanvas() {
-            canvas = new fabric.Canvas('floorCanvas', { selection: false });
-        }
+  /* Auto part of the hybrid model: derive suggested smoke detectors from
+     room areas, then write into the (editable) floor count.            */
+  recalcFloorDetectors(floorId) {
+    const f = this.state.floors.find(x => x.id === floorId);
+    if (!f) return;
+    const cov = this.state.coverage.smoke || 100;
+    let suggested = 0;
+    f.rooms.forEach(r => {
+      const area = (Number(r.length) || 0) * (Number(r.width) || 0);
+      if (area > 0) suggested += Math.max(1, Math.ceil(area / cov));
+    });
+    f.suggestedSmoke = suggested;
+    // only auto-fill if user hasn't manually raised it above the suggestion
+    if (f.counts.smoke < suggested) f.counts.smoke = suggested;
+  },
 
-        function uploadPlan(e) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const imgObj = new Image();
-                imgObj.src = event.target.result;
-                imgObj.onload = function() {
-                    const img = new fabric.Image(imgObj);
-                    const scale = canvas.width / img.width;
-                    img.set({ scaleX: scale, scaleY: scale, selectable: false });
-                    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-                }
-            }
-            reader.readAsDataURL(e.target.files[0]);
-        }
+  floorArea(f) {
+    return f.rooms.reduce((s, r) => s + (Number(r.length) || 0) * (Number(r.width) || 0), 0);
+  },
 
-        function addShape(type) {
-            let shape;
-            const commonProps = { left: 100, top: 100, hasBorders: true, hasControls: false, transparentCorners: false };
-            
-            if(type === 'smoke') {
-                shape = new fabric.Circle({ radius: 12, fill: '#ef4444', stroke: '#7f1d1d', strokeWidth: 2, ...commonProps });
-            } else if (type === 'sounder') {
-                shape = new fabric.Rect({ width: 24, height: 24, fill: '#3b82f6', stroke: '#1e3a8a', strokeWidth: 2, ...commonProps });
-            } else if (type === 'callpoint') {
-                shape = new fabric.Triangle({ width: 26, height: 26, fill: '#10b981', stroke: '#064e3b', strokeWidth: 2, ...commonProps });
-            }
-            canvas.add(shape);
-            canvas.setActiveObject(shape);
-        }
+  /* ---------- cables ---------- */
+  addCable(line) {
+    this.state.cables.push(Object.assign({ id: this.uid(), typeId: FAS_DATA.cables[0].id, floor: "", length: 0 }, line));
+    this.save();
+  },
+  removeCable(id) {
+    this.state.cables = this.state.cables.filter(c => c.id !== id);
+    this.save();
+  },
 
-        function clearCanvas() {
-            if(confirm("Are you sure you want to clear the entire floor plan workspace?")) {
-                canvas.clear();
-                canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
-                canvas.backgroundColor = '#f8fafc';
-            }
-        }
-    </script>
+  /* ===================================================================
+     CALCULATION ENGINE
+     =================================================================== */
+
+  deviceTotals() {
+    const totals = {};
+    FAS_DATA.devices.forEach(d => totals[d.id] = 0);
+    this.state.floors.forEach(f => {
+      FAS_DATA.devices.forEach(d => totals[d.id] += Number(f.counts[d.id]) || 0);
+    });
+    totals.panel = Math.max(totals.panel, Number(this.state.panels) || 0);
+    return totals;
+  },
+
+  cableTotals() {
+    const byType = {};
+    let total = 0;
+    this.state.cables.forEach(c => {
+      const len = Number(c.length) || 0;
+      byType[c.typeId] = (byType[c.typeId] || 0) + len;
+      total += len;
+    });
+    return { byType, total };
+  },
+
+  /* Combined counts including devices placed on uploaded drawings */
+  plannerTotals() {
+    const totals = {};
+    FAS_DATA.devices.forEach(d => totals[d.id] = 0);
+    (this.state.planner.plans || []).forEach(p => {
+      (p.objects || []).forEach(o => { if (totals[o.deviceType] !== undefined) totals[o.deviceType]++; });
+    });
+    return totals;
+  },
+
+  /* Bill of Quantities: line items with pricing */
+  boq() {
+    const cur = this.state.project.currency || "USD";
+    const dTot = this.deviceTotals();
+    const cTot = this.cableTotals();
+    const rows = [];
+    let grand = 0;
+
+    FAS_DATA.devices.forEach(d => {
+      const qty = d.id === "panel" ? Math.max(dTot.panel, Number(this.state.panels) || 0) : dTot[d.id];
+      if (qty > 0) {
+        const unit = Number(this.state.pricing[d.id]) || 0;
+        const total = qty * unit;
+        grand += total;
+        rows.push({ item: d.name, unit: "pcs", qty, price: unit, total, kind: "device" });
+      }
+    });
+
+    FAS_DATA.cables.forEach(c => {
+      const qty = cTot.byType[c.id] || 0;
+      if (qty > 0) {
+        const unit = Number(this.state.pricing["cable_" + c.id]) || 0;
+        const total = qty * unit;
+        grand += total;
+        rows.push({ item: c.name, unit: "m", qty, price: unit, total, kind: "cable" });
+      }
+    });
+
+    return { rows, grand, currency: cur };
+  }
+};
+
+
+/* ===== js/ui.js ===== */
+/* =====================================================================
+   ui.js : tiny DOM + formatting helpers shared by all sections
+   ===================================================================== */
+
+const UI = {
+  $:  (sel, root = document) => root.querySelector(sel),
+  $$: (sel, root = document) => Array.from(root.querySelectorAll(sel)),
+
+  /* hyperscript-ish element builder */
+  el(tag, attrs = {}, children = []) {
+    const e = document.createElement(tag);
+    for (const k in attrs) {
+      const v = attrs[k];
+      if (k === "class") e.className = v;
+      else if (k === "html") e.innerHTML = v;
+      else if (k === "text") e.textContent = v;
+      else if (k === "style") e.setAttribute("style", v);
+      else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.slice(2), v);
+      else if (v !== null && v !== undefined && v !== false) e.setAttribute(k, v);
+    }
+    (Array.isArray(children) ? children : [children]).forEach(c => {
+      if (c == null) return;
+      e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return e;
+  },
+
+  esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, m =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  },
+
+  money(n, cur) {
+    const v = Number(n) || 0;
+    return (cur ? cur + " " : "") + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  },
+
+  num(n) { return (Number(n) || 0).toLocaleString(); },
+
+  toast(msg, type = "") {
+    let t = UI.$("#toast");
+    if (!t) { t = UI.el("div", { id: "toast" }); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.className = "show " + type;
+    clearTimeout(UI._tt);
+    UI._tt = setTimeout(() => t.className = type, 2200);
+  },
+
+  /* render a device icon badge */
+  devBadge(dev) {
+    return UI.el("span", { class: "dev-icon", style: `background:${dev.color}`, title: dev.name }, dev.symbol);
+  }
+};
+
+
+/* ===== js/fas.js ===== */
+/* =====================================================================
+   fas.js : SECTION 1 — FAS
+   Project identity + brand/vendor + addressable/conventional + auto docs
+   ===================================================================== */
+
+const FasSection = {
+  render(root) {
+    const s = Store.state;
+    root.innerHTML = "";
+
+    root.appendChild(UI.el("div", { class: "page-head" }, [
+      UI.el("h2", {}, [ "Fire Alarm System", UI.el("span", { class: "tag" }, "FAS") ]),
+      UI.el("p", {}, "Define the project, then select the system brand/vendor and topology. The datasheets & manuals link straight to the manufacturer's official site.")
+    ]));
+
+    /* ---- Project identity ---- */
+    const p = s.project;
+    const fld = (label, key, type = "text", hint = "") => UI.el("label", { class: "fld" }, [
+      UI.el("span", {}, [ label, hint ? UI.el("span", { class: "hint" }, "  " + hint) : null ]),
+      UI.el("input", {
+        type, value: p[key] ?? "",
+        oninput: e => { p[key] = e.target.value; Store.save(); App.refreshTopbar(); }
+      })
+    ]);
+
+    const projCard = UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Project Information"), UI.el("span", { class: "k" }, "01 · meta") ]),
+      UI.el("div", { class: "card-b" }, [
+        UI.el("div", { class: "grid-3" }, [
+          fld("Project Name", "name"),
+          fld("Client", "client"),
+          fld("Location", "location"),
+          fld("Consultant", "consultant"),
+          fld("Project Engineer", "engineer"),
+          fld("Reference No.", "reference"),
+          fld("Date", "date", "date"),
+          UI.el("label", { class: "fld" }, [
+            UI.el("span", {}, "Currency"),
+            UI.el("select", { onchange: e => { p.currency = e.target.value; Store.save(); App.refreshTopbar(); } },
+              FAS_DATA.currencies.map(c => UI.el("option", { value: c, selected: p.currency === c }, c)))
+          ])
+        ])
+      ])
+    ]);
+    root.appendChild(projCard);
+
+    /* ---- Brand + topology ---- */
+    const brandSelect = UI.el("select", {
+      onchange: e => { s.fas.brand = e.target.value; Store.save(); this.renderDocs(); this.syncToggle(); }
+    }, FAS_DATA.brands.map(b => UI.el("option", { value: b.id, selected: s.fas.brand === b.id }, b.name)));
+
+    const segBtn = (val, txt) => UI.el("button", {
+      class: s.fas.type === val ? "on" : "", "data-type": val,
+      onclick: () => { s.fas.type = val; Store.save(); this.syncToggle(); }
+    }, txt);
+
+    this._seg = UI.el("div", { class: "seg" }, [ segBtn("addressable", "Addressable"), segBtn("conventional", "Conventional") ]);
+
+    const sysCard = UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "System Brand & Topology"), UI.el("span", { class: "k" }, "02 · vendor") ]),
+      UI.el("div", { class: "card-b" }, [
+        UI.el("div", { class: "grid-2" }, [
+          UI.el("label", { class: "fld" }, [ UI.el("span", {}, "Brand / Vendor"), brandSelect ]),
+          UI.el("label", { class: "fld" }, [ UI.el("span", {}, "System Type"), this._seg ])
+        ])
+      ])
+    ]);
+    root.appendChild(sysCard);
+
+    /* ---- Docs ---- */
+    this._docsCard = UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Datasheets & Manuals"), UI.el("span", { class: "k" }, "03 · official docs") ]),
+      UI.el("div", { class: "card-b", id: "fas-docs" })
+    ]);
+    root.appendChild(this._docsCard);
+
+    /* ---- Design standard ---- */
+    const std = FAS_DATA.standard;
+    root.appendChild(UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Design Standard"), UI.el("span", { class: "k" }, "04 · code basis") ]),
+      UI.el("div", { class: "card-b" }, [
+        UI.el("div", { class: "row-flex", style: "margin-bottom:12px" }, [
+          UI.el("span", { class: "pill addr" }, std.code),
+          UI.el("a", { class: "pill", href: std.url, target: "_blank", rel: "noopener", style: "text-decoration:none" }, "NFPA.org ↗")
+        ]),
+        UI.el("div", { class: "muted", style: "font-size:12.5px;margin-bottom:6px" }, std.title + " — used as the design basis for detector spacing and coverage throughout this tool:"),
+        UI.el("ul", { style: "margin:0;padding-left:18px;font-size:12.5px;line-height:1.65;color:var(--muted)" },
+          std.notes.map(n => UI.el("li", {}, n)))
+      ])
+    ]));
+
+    this.renderDocs();
+    this.syncToggle();
+  },
+
+  syncToggle() {
+    const s = Store.state;
+    if (!this._seg) return;
+    UI.$$("button", this._seg).forEach(b => b.classList.toggle("on", b.dataset.type === s.fas.type));
+  },
+
+  renderDocs() {
+    const s = Store.state;
+    const b = FAS_DATA.brandById(s.fas.brand);
+    const host = UI.$("#fas-docs");
+    if (!host || !b) return;
+    host.innerHTML = "";
+
+    const supports = b.type === "both" ? "Addressable & Conventional"
+      : (b.type === "addressable" ? "Addressable" : "Conventional");
+    const supportPill = b.type === "addressable" ? "addr" : (b.type === "conventional" ? "conv" : "addr");
+
+    host.appendChild(UI.el("div", { class: "row-flex", style: "margin-bottom:14px" }, [
+      UI.el("span", { class: "pill " + supportPill }, supports),
+      UI.el("span", { class: "pill" }, "Origin: " + b.country)
+    ]));
+
+    host.appendChild(UI.el("div", { class: "grid-2" }, [
+      UI.el("a", { class: "btn primary", href: b.docs, target: "_blank", rel: "noopener" },
+        [ "📄  Open Datasheets / Products" ]),
+      UI.el("a", { class: "btn", href: b.site, target: "_blank", rel: "noopener" },
+        [ "🌐  Manufacturer Website" ])
+    ]));
+
+    host.appendChild(UI.el("div", { class: "notice info", style: "margin-top:14px" }, [
+      UI.el("span", { class: "i" }, "ℹ"),
+      UI.el("span", {}, [
+        "Links open ", UI.el("b", {}, b.name), "'s official site where current datasheets, installation manuals and approvals are published. ",
+        "You can replace any link with an exact PDF URL inside ", UI.el("code", { class: "mono" }, "js/data.js"), "."
+      ])
+    ]));
+  }
+};
+
+
+/* ===== js/infrastructure.js ===== */
+/* =====================================================================
+   infrastructure.js : SECTION 2 — FAS INFRASTRUCTURE
+   Building description, per-floor rooms + devices (hybrid auto/manual),
+   cabling, and live project totals.
+   ===================================================================== */
+
+const InfraSection = {
+  render(root) {
+    const s = Store.state;
+    root.innerHTML = "";
+
+    root.appendChild(UI.el("div", { class: "page-head" }, [
+      UI.el("h2", {}, [ "FAS Infrastructure", UI.el("span", { class: "tag" }, "BOQ") ]),
+      UI.el("p", {}, "Describe the building floor-by-floor. Enter room sizes to auto-suggest smoke detectors, then fine-tune every device count manually. Totals roll up live for the whole project.")
+    ]));
+
+    root.appendChild(UI.el("div", { class: "notice" }, [
+      UI.el("span", { class: "i" }, "⚠"),
+      UI.el("span", {}, [
+        "Auto-suggested detector quantities follow ", UI.el("b", {}, FAS_DATA.standard.code),
+        " nominal smooth-ceiling spacing — 30 ft (9.1 m) ≈ 84 m² per spot smoke detector, with the 0.7 rule applied. ",
+        "Values are indicative design aids only; the final design must be verified by a competent fire engineer against ",
+        FAS_DATA.standard.code, " and the Authority Having Jurisdiction (AHJ)."
+      ])
+    ]));
+
+    /* ---- coverage settings ---- */
+    const covInput = (label, key) => UI.el("label", { class: "fld" }, [
+      UI.el("span", {}, [ label, UI.el("span", { class: "hint" }, " m² / detector") ]),
+      UI.el("input", { type: "number", min: "1", value: s.coverage[key], class: "mono",
+        oninput: e => { s.coverage[key] = Number(e.target.value) || 1;
+          s.floors.forEach(f => Store.recalcFloorDetectors(f.id)); Store.save(); this.renderFloors(); this.updateTotals(); } })
+    ]);
+    root.appendChild(UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Coverage Settings"),
+        UI.el("span", { class: "k" }, "basis · " + FAS_DATA.standard.code) ]),
+      UI.el("div", { class: "card-b" }, [
+        UI.el("div", { class: "grid-3" }, [ covInput("Smoke", "smoke"), covInput("Heat", "heat"), covInput("Multi-Sensor", "multi") ]),
+        UI.el("div", { class: "muted", style: "font-size:11.5px;margin-top:12px;line-height:1.55" }, [
+          "Defaults follow " + FAS_DATA.standard.code + ": 30 ft (9.1 m) smooth-ceiling grid ≈ 84 m² per spot smoke/multi detector. ",
+          "Heat detectors follow the product's listed spacing (15–50 ft). Adjust any value to match your detectors and ceiling height."
+        ])
+      ])
+    ]));
+
+    /* ---- floors ---- */
+    const floorsCard = UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [
+        UI.el("h3", {}, "Floors & Devices"),
+        UI.el("span", { class: "k" }, "03 · per floor"),
+        UI.el("span", { class: "spacer", style: "flex:1" }),
+        UI.el("button", { class: "btn primary sm", onclick: () => { Store.addFloor(); this.renderFloors(); this.updateTotals(); } }, "＋ Add Floor")
+      ]),
+      UI.el("div", { class: "card-b" }, [ UI.el("div", { id: "infra-floors" }) ])
+    ]);
+    root.appendChild(floorsCard);
+
+    /* ---- cables + panels ---- */
+    root.appendChild(this.buildCablesCard());
+
+    /* ---- totals dashboard ---- */
+    root.appendChild(UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Project Totals"), UI.el("span", { class: "k" }, "auto-rollup") ]),
+      UI.el("div", { class: "card-b" }, [ UI.el("div", { class: "stats", id: "infra-totals" }) ])
+    ]));
+
+    this.renderFloors();
+    this.renderCables();
+    this.updateTotals();
+  },
+
+  /* ---------------- floors ---------------- */
+  renderFloors() {
+    const host = UI.$("#infra-floors");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!Store.state.floors.length) {
+      host.appendChild(UI.el("div", { class: "empty" }, "No floors yet — click “Add Floor” to start describing the building."));
+      return;
+    }
+    Store.state.floors.forEach((f, i) => host.appendChild(this.buildFloor(f, i)));
+  },
+
+  buildFloor(f, idx) {
+    const totalDevices = FAS_DATA.devices.reduce((s, d) => s + (Number(f.counts[d.id]) || 0), 0);
+
+    const wrap = UI.el("div", { class: "floor" + (idx === 0 ? " open" : "") });
+
+    const head = UI.el("div", { class: "fh" }, [
+      UI.el("span", { class: "caret" }, "▶"),
+      UI.el("div", { class: "fname" }, [
+        UI.el("input", { value: f.name, onclick: e => e.stopPropagation(),
+          oninput: e => { f.name = e.target.value; Store.save(); } })
+      ]),
+      UI.el("div", { class: "meta" }, [
+        UI.el("span", {}, [ "Area ", UI.el("b", { id: "area-" + f.id }, Store.floorArea(f) + " m²") ]),
+        UI.el("span", {}, [ "Rooms ", UI.el("b", {}, String(f.rooms.length)) ]),
+        UI.el("span", {}, [ "Devices ", UI.el("b", { id: "dev-" + f.id }, String(totalDevices)) ]),
+        UI.el("button", { class: "x-btn", title: "Delete floor", onclick: e => {
+          e.stopPropagation();
+          if (confirm("Delete " + (f.name || "this floor") + "?")) { Store.removeFloor(f.id); this.renderFloors(); this.updateTotals(); }
+        } }, "✕")
+      ])
+    ]);
+    head.addEventListener("click", () => wrap.classList.toggle("open"));
+
+    const body = UI.el("div", { class: "fb" });
+
+    /* rooms */
+    body.appendChild(UI.el("div", { class: "subhead" }, "Rooms — enter L × W to auto-suggest smoke detectors"));
+    const roomTable = UI.el("table", {}, [
+      UI.el("thead", {}, UI.el("tr", {}, [
+        UI.el("th", {}, "Room / Area"), UI.el("th", { class: "num" }, "Length (m)"),
+        UI.el("th", { class: "num" }, "Width (m)"), UI.el("th", { class: "num" }, "Area (m²)"), UI.el("th", {}, "")
+      ])),
+      UI.el("tbody", {}, f.rooms.map(r => this.roomRow(f, r)))
+    ]);
+    body.appendChild(roomTable);
+    body.appendChild(UI.el("div", { style: "margin-top:10px" }, [
+      UI.el("button", { class: "btn sm", onclick: () => { Store.addRoom(f.id, {}); this.renderFloors(); this.updateTotals(); } }, "＋ Add Room")
+    ]));
+
+    /* device counts */
+    body.appendChild(UI.el("div", { class: "sep" }));
+    body.appendChild(UI.el("div", { class: "subhead" }, "Device count on this floor (editable)"));
+    const grid = UI.el("div", { class: "grid-4" });
+    FAS_DATA.devices.filter(d => d.id !== "panel").forEach(d => {
+      const isSmoke = d.id === "smoke";
+      grid.appendChild(UI.el("label", { class: "fld" }, [
+        UI.el("span", { class: "row-flex", style: "gap:7px" }, [ UI.devBadge(d), d.short,
+          isSmoke ? UI.el("span", { class: "hint", id: "sg-" + f.id }, " · sugg " + (f.suggestedSmoke || 0)) : null ]),
+        UI.el("input", { type: "number", min: "0", class: "mono", value: f.counts[d.id] || 0,
+          oninput: e => { f.counts[d.id] = Math.max(0, Number(e.target.value) || 0); Store.save();
+            this.updateFloorMeta(f); this.updateTotals(); } })
+      ]));
+    });
+    body.appendChild(grid);
+
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+    return wrap;
+  },
+
+  roomRow(f, r) {
+    const areaCell = UI.el("td", { class: "num", id: "ra-" + r.id }, String((Number(r.length) || 0) * (Number(r.width) || 0)));
+    const onDim = () => {
+      Store.recalcFloorDetectors(f.id);
+      areaCell.textContent = String((Number(r.length) || 0) * (Number(r.width) || 0));
+      this.updateFloorMeta(f);
+      const sg = UI.$("#sg-" + f.id); if (sg) sg.textContent = " · sugg " + (f.suggestedSmoke || 0);
+      this.syncSmokeField(f);
+      Store.save();
+      this.updateTotals();
+    };
+    return UI.el("tr", {}, [
+      UI.el("td", {}, UI.el("input", { value: r.name, placeholder: "e.g. Server Hall",
+        oninput: e => { r.name = e.target.value; Store.save(); } })),
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: "0.1", class: "mono", value: r.length || "",
+        oninput: e => { r.length = Number(e.target.value) || 0; onDim(); } })),
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: "0.1", class: "mono", value: r.width || "",
+        oninput: e => { r.width = Number(e.target.value) || 0; onDim(); } })),
+      areaCell,
+      UI.el("td", {}, UI.el("button", { class: "x-btn", title: "Remove room",
+        onclick: () => { Store.removeRoom(f.id, r.id); this.renderFloors(); this.updateTotals(); } }, "✕"))
+    ]);
+  },
+
+  syncSmokeField(f) {
+    // find the smoke input within this floor block and update its value to the (possibly raised) suggestion
+    const blocks = UI.$$("#infra-floors .floor");
+    const idx = Store.state.floors.indexOf(f);
+    const block = blocks[idx];
+    if (!block) return;
+    const smokeLabel = UI.$$("label.fld", block).find(l => l.querySelector(".dev-icon")?.title === "Smoke Detector");
+    const input = smokeLabel?.querySelector("input");
+    if (input && Number(input.value) < (f.counts.smoke || 0)) input.value = f.counts.smoke;
+  },
+
+  updateFloorMeta(f) {
+    const a = UI.$("#area-" + f.id); if (a) a.textContent = Store.floorArea(f) + " m²";
+    const total = FAS_DATA.devices.reduce((s, d) => s + (Number(f.counts[d.id]) || 0), 0);
+    const d = UI.$("#dev-" + f.id); if (d) d.textContent = String(total);
+  },
+
+  /* ---------------- cables + panels ---------------- */
+  buildCablesCard() {
+    const card = UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [
+        UI.el("h3", {}, "Cabling & Control"),
+        UI.el("span", { class: "k" }, "04 · runs" ),
+        UI.el("span", { style: "flex:1" }),
+        UI.el("button", { class: "btn sm", onclick: () => { Store.addCable({}); this.renderCables(); this.updateTotals(); } }, "＋ Add Cable Run")
+      ]),
+      UI.el("div", { class: "card-b" }, [
+        UI.el("div", { class: "grid-2", style: "align-items:end; margin-bottom:14px" }, [
+          UI.el("label", { class: "fld", style: "max-width:240px" }, [
+            UI.el("span", {}, "Fire Alarm Panels (project)"),
+            UI.el("input", { type: "number", min: "0", class: "mono", value: Store.state.panels,
+              oninput: e => { Store.state.panels = Math.max(0, Number(e.target.value) || 0); Store.save(); this.updateTotals(); } })
+          ])
+        ]),
+        UI.el("div", { id: "infra-cables" })
+      ])
+    ]);
+    return card;
+  },
+
+  renderCables() {
+    const host = UI.$("#infra-cables");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!Store.state.cables.length) {
+      host.appendChild(UI.el("div", { class: "empty" }, "No cable runs added yet."));
+      return;
+    }
+    const tbody = UI.el("tbody", {}, Store.state.cables.map(c => UI.el("tr", {}, [
+      UI.el("td", {}, UI.el("select", { onchange: e => { c.typeId = e.target.value; Store.save(); this.updateTotals(); } },
+        FAS_DATA.cables.map(ct => UI.el("option", { value: ct.id, selected: c.typeId === ct.id }, ct.name + " — " + ct.brand)))),
+      UI.el("td", {}, UI.el("input", { value: c.floor || "", placeholder: "Floor / zone",
+        oninput: e => { c.floor = e.target.value; Store.save(); } })),
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", class: "mono", value: c.length || "",
+        oninput: e => { c.length = Number(e.target.value) || 0; Store.save(); this.updateTotals(); } })),
+      UI.el("td", {}, UI.el("button", { class: "x-btn", onclick: () => { Store.removeCable(c.id); this.renderCables(); this.updateTotals(); } }, "✕"))
+    ])));
+    host.appendChild(UI.el("table", {}, [
+      UI.el("thead", {}, UI.el("tr", {}, [
+        UI.el("th", {}, "Cable Type / Section / Brand"), UI.el("th", {}, "Floor / Zone"),
+        UI.el("th", { class: "num" }, "Length (m)"), UI.el("th", {}, "")
+      ])),
+      tbody
+    ]));
+  },
+
+  /* ---------------- totals dashboard ---------------- */
+  updateTotals() {
+    const host = UI.$("#infra-totals");
+    if (!host) return;
+
+    const dTot = Store.deviceTotals();
+    const cTot = Store.cableTotals();
+
+    const cards = [];
+    const stat = (v, l, c) => UI.el("div", { class: "stat", style: "--c:" + c }, [
+      UI.el("div", { class: "v" }, String(v)), UI.el("div", { class: "l" }, l)
+    ]);
+
+    FAS_DATA.devices.forEach(d => {
+      const v = d.id === "panel" ? Math.max(dTot.panel, Number(Store.state.panels) || 0) : dTot[d.id];
+      if (v > 0 || ["smoke", "heat", "mcp", "sounder", "panel"].includes(d.id))
+        cards.push(stat(v, d.name, d.color));
+    });
+    cards.push(stat(UI.num(cTot.total) + " m", "Total Cable", "#5ab0ff"));
+
+    host.innerHTML = "";
+    cards.forEach(c => host.appendChild(c));
+  }
+};
+
+
+/* ===== js/planner.js ===== */
+/* =====================================================================
+   planner.js : SECTION 4 — DRAWINGS / PLANNER
+   Upload a PDF plan, drop fire devices onto it (draggable markers),
+   toggle layers, auto-count via live legend, and export PNG / PDF.
+   ---------------------------------------------------------------------
+   Markers are stored as RELATIVE coordinates (0–1) + page index, so
+   they persist and re-map at any zoom. The PDF itself is held for the
+   session; re-upload it after a refresh to see the markers re-drawn.
+   ===================================================================== */
+
+const Planner = {
+  _pdf: null, _page: 1, _fab: null, _armed: null, _hidden: new Set(), _keyBound: false,
+
+  plan() {
+    const pl = Store.state.planner;
+    if (!pl.plans.length) pl.plans.push({ id: Store.uid(), name: "Layout", pageCount: 0, objects: [] });
+    return pl.plans[0];
+  },
+
+  render(root) {
+    root.innerHTML = "";
+    const plan = this.plan();
+
+    root.appendChild(UI.el("div", { class: "page-head" }, [
+      UI.el("h2", {}, [ "Drawings & Device Layout", UI.el("span", { class: "tag" }, "PLANNER") ]),
+      UI.el("p", {}, "Upload a PDF floor plan, pick a device from the palette and click to drop it. Markers are draggable; press Delete to remove the selected one. Counts update live in the legend.")
+    ]));
+
+    const libsOk = (typeof pdfjsLib !== "undefined") && (typeof fabric !== "undefined");
+    if (!libsOk) {
+      root.appendChild(UI.el("div", { class: "notice" }, [ UI.el("span", { class: "i" }, "⚠"),
+        UI.el("span", {}, "The PDF / canvas libraries did not load. Check your internet connection (they load from a CDN) and reload the page.") ]));
+      return;
+    }
+    if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc)
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    // The DOM was rebuilt above, so any previous Fabric canvas is now detached.
+    // Drop it so ensureFabric() re-binds to the fresh <canvas> element.
+    if (this._fab) { try { this._fab.dispose(); } catch (e) { /* canvas already gone */ } this._fab = null; }
+
+    /* ---- upload + toolbar ---- */
+    const drop = UI.el("div", { class: "drop" }, [
+      UI.el("div", { style: "font-size:26px" }, "⬆"),
+      UI.el("div", { style: "margin-top:6px;font-weight:700;color:var(--text)" }, plan.objects.length ? "Re-upload the PDF to view & edit markers" : "Drop a PDF plan here, or click to browse"),
+      UI.el("div", { class: "muted", style: "font-size:11.5px;margin-top:4px" }, "Markers re-map automatically across pages and zoom.")
+    ]);
+    const fileInput = UI.el("input", { type: "file", accept: "application/pdf", style: "display:none" });
+    drop.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", e => { if (e.target.files[0]) this.loadPdf(e.target.files[0]); });
+    ["dragover", "dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+    ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+    drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f && f.type === "application/pdf") this.loadPdf(f); });
+
+    const nameInput = UI.el("input", { value: plan.name, style: "max-width:200px",
+      oninput: e => { plan.name = e.target.value; Store.save(); } });
+
+    this._toolbar = UI.el("div", { class: "row-flex", style: "margin-top:14px" }, [
+      UI.el("button", { class: "btn sm", id: "pg-prev", onclick: () => this.flip(-1) }, "‹ Prev"),
+      UI.el("span", { class: "pill", id: "pg-ind" }, "Page –"),
+      UI.el("button", { class: "btn sm", id: "pg-next", onclick: () => this.flip(1) }, "Next ›"),
+      UI.el("span", { style: "flex:1" }),
+      UI.el("button", { class: "btn sm danger", onclick: () => this.clearPage() }, "Clear page"),
+      UI.el("button", { class: "btn sm", onclick: () => this.exportPNG() }, "⬇ PNG"),
+      UI.el("button", { class: "btn sm green", onclick: () => this.exportPDF() }, "⬇ PDF")
+    ]);
+
+    root.appendChild(UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Plan File"),
+        UI.el("span", { style: "flex:1" }),
+        UI.el("label", { class: "fld", style: "flex-direction:row;align-items:center;gap:8px" }, [ UI.el("span", {}, "Name"), nameInput ]) ]),
+      UI.el("div", { class: "card-b" }, [ drop, fileInput, this._toolbar ])
+    ]));
+
+    /* ---- workspace ---- */
+    const palette = UI.el("div", { id: "palette" });
+    FAS_DATA.devices.forEach(d => {
+      palette.appendChild(UI.el("div", { class: "palette-item", "data-dev": d.id,
+        onclick: () => this.arm(d.id) }, [ UI.devBadge(d), UI.el("span", {}, d.name) ]));
+    });
+    palette.appendChild(UI.el("button", { class: "btn ghost sm", style: "width:100%;margin-top:8px", onclick: () => this.arm(null) }, "✋ Select / Move"));
+
+    const stage = UI.el("div", { class: "canvas-stage", id: "p-stage" }, [
+      UI.el("div", { class: "ph", id: "p-ph" }, "No plan loaded yet."),
+      UI.el("canvas", { id: "planner-canvas" })
+    ]);
+
+    const side = UI.el("div", {}, [
+      UI.el("div", { class: "card", style: "margin:0 0 14px" }, [
+        UI.el("div", { class: "card-h" }, UI.el("h3", {}, "Layers")),
+        UI.el("div", { class: "card-b", id: "p-layers", style: "padding:12px" })
+      ]),
+      UI.el("div", { class: "card", style: "margin:0" }, [
+        UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Legend / Count"), UI.el("span", { class: "k" }, "auto" ) ]),
+        UI.el("div", { class: "card-b legend-box", id: "p-legend", style: "padding:12px" })
+      ])
+    ]);
+
+    root.appendChild(UI.el("div", { class: "planner-wrap" }, [
+      UI.el("div", {}, [ UI.el("div", { class: "subhead" }, "Device Palette" ), palette ]),
+      stage, side
+    ]));
+
+    this.canvasEl = UI.$("#planner-canvas");
+    UI.$("#planner-canvas").style.display = "none";
+    this.bindKeys();
+    this.updateLayers();
+    this.updateLegend();
+    this.updateToolbar();
+
+    // if a pdf is already loaded this session, re-render
+    if (this._pdf) this.renderPage();
+  },
+
+  arm(id) {
+    this._armed = id;
+    UI.$$("#palette .palette-item").forEach(it => it.classList.toggle("armed", it.dataset.dev === id));
+    const stage = UI.$("#p-stage");
+    if (stage) stage.style.cursor = id ? "crosshair" : "default";
+  },
+
+  async loadPdf(file) {
+    try {
+      UI.toast("Loading PDF…");
+      const buf = await file.arrayBuffer();
+      this._pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      const plan = this.plan();
+      plan.pageCount = this._pdf.numPages;
+      if (!plan.name || plan.name === "Layout") plan.name = file.name.replace(/\.pdf$/i, "");
+      Store.save();
+      this._page = 1;
+      const ph = UI.$("#p-ph"); if (ph) ph.style.display = "none";
+      UI.$("#planner-canvas").style.display = "block";
+      await this.renderPage();
+      UI.toast("Plan loaded", "ok");
+    } catch (e) {
+      console.error(e); UI.toast("Could not read PDF", "err");
+    }
+  },
+
+  ensureFabric() {
+    if (this._fab) return;
+    this._fab = new fabric.Canvas("planner-canvas", { selection: true, preserveObjectStacking: true, backgroundColor: "#0e131a" });
+    this._fab.on("mouse:down", opt => {
+      if (this._armed && !opt.target) {
+        const p = this._fab.getPointer(opt.e);
+        this.placeMarker(this._armed, p.x, p.y);
+      }
+    });
+  },
+
+  async renderPage() {
+    if (!this._pdf) return;
+    const stage = UI.$("#p-stage");
+    // reveal the canvas / hide the placeholder (stage width is valid regardless)
+    const ph = UI.$("#p-ph"); if (ph) ph.style.display = "none";
+    const cEl = UI.$("#planner-canvas"); if (cEl) cEl.style.display = "block";
+    const page = await this._pdf.getPage(this._page);
+    let vp = page.getViewport({ scale: 1 });
+    const targetW = Math.min((stage.clientWidth || 820) - 4, 1100);
+    const scale = targetW / vp.width;
+    vp = page.getViewport({ scale });
+    const off = document.createElement("canvas");
+    off.width = Math.floor(vp.width); off.height = Math.floor(vp.height);
+    await page.render({ canvasContext: off.getContext("2d"), viewport: vp }).promise;
+    const bg = off.toDataURL("image/png");
+
+    this.ensureFabric();
+    this._fab.setWidth(off.width); this._fab.setHeight(off.height);
+    this._fab.getObjects().slice().forEach(o => this._fab.remove(o));
+    fabric.Image.fromURL(bg, img => {
+      this._fab.setBackgroundImage(img, this._fab.renderAll.bind(this._fab),
+        { scaleX: off.width / img.width, scaleY: off.height / img.height });
+    });
+    this.loadMarkers();
+    this.updateToolbar();
+  },
+
+  loadMarkers() {
+    const plan = this.plan();
+    const w = this._fab.getWidth(), h = this._fab.getHeight();
+    plan.objects.filter(o => (o.page || 1) === this._page).forEach(o => {
+      this.placeMarker(o.deviceType, o.xr * w, o.yr * h, o);
+    });
+    this._fab.requestRenderAll();
+  },
+
+  placeMarker(deviceId, x, y, existing) {
+    const dev = FAS_DATA.deviceById(deviceId); if (!dev) return;
+    const plan = this.plan();
+    let obj = existing;
+    if (!obj) {
+      obj = { deviceType: deviceId, xr: x / this._fab.getWidth(), yr: y / this._fab.getHeight(), page: this._page };
+      plan.objects.push(obj); Store.save(); this.updateLegend(); this.updateLayers();
+    }
+    const circle = new fabric.Circle({ radius: 14, fill: dev.color, stroke: "#0a0f15", strokeWidth: 2, originX: "center", originY: "center" });
+    const label = new fabric.Text(dev.short, { fontSize: 9, fontFamily: "JetBrains Mono, monospace", fontWeight: "bold", fill: "#07121a", originX: "center", originY: "center" });
+    const g = new fabric.Group([circle, label], { left: x, top: y, originX: "center", originY: "center", hasControls: false, hasBorders: true, hoverCursor: "move" });
+    g.deviceType = deviceId; g._store = obj;
+    g.visible = !this._hidden.has(deviceId);
+    g.on("moved", () => { obj.xr = g.left / this._fab.getWidth(); obj.yr = g.top / this._fab.getHeight(); Store.save(); });
+    this._fab.add(g);
+  },
+
+  flip(dir) {
+    const plan = this.plan();
+    if (!this._pdf) return;
+    const next = this._page + dir;
+    if (next < 1 || next > plan.pageCount) return;
+    this._page = next;
+    this.renderPage();
+  },
+
+  updateToolbar() {
+    const plan = this.plan();
+    const ind = UI.$("#pg-ind"); if (ind) ind.textContent = this._pdf ? `Page ${this._page} / ${plan.pageCount}` : "Page –";
+    const prev = UI.$("#pg-prev"), next = UI.$("#pg-next");
+    if (prev) prev.disabled = !this._pdf || this._page <= 1;
+    if (next) next.disabled = !this._pdf || this._page >= plan.pageCount;
+  },
+
+  clearPage() {
+    if (!this._fab) return;
+    if (!confirm("Remove all markers on this page?")) return;
+    const plan = this.plan();
+    plan.objects = plan.objects.filter(o => (o.page || 1) !== this._page);
+    Store.save();
+    this._fab.getObjects().slice().forEach(o => this._fab.remove(o));
+    this._fab.requestRenderAll();
+    this.updateLegend(); this.updateLayers();
+  },
+
+  bindKeys() {
+    if (this._keyBound) return;
+    this._keyBound = true;
+    document.addEventListener("keydown", e => {
+      if (App.current !== "planner" || !this._fab) return;
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const tag = (document.activeElement && document.activeElement.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const active = this._fab.getActiveObject(); if (!active) return;
+      e.preventDefault();
+      const objs = active.type === "activeSelection" ? active.getObjects() : [active];
+      const plan = this.plan();
+      objs.forEach(o => { const i = plan.objects.indexOf(o._store); if (i >= 0) plan.objects.splice(i, 1); this._fab.remove(o); });
+      this._fab.discardActiveObject(); this._fab.requestRenderAll();
+      Store.save(); this.updateLegend(); this.updateLayers();
+    });
+  },
+
+  /* layers = per-device visibility toggles (also shows per-device totals) */
+  updateLayers() {
+    const host = UI.$("#p-layers"); if (!host) return;
+    const counts = {};
+    this.plan().objects.forEach(o => counts[o.deviceType] = (counts[o.deviceType] || 0) + 1);
+    host.innerHTML = "";
+    const present = FAS_DATA.devices.filter(d => counts[d.id]);
+    if (!present.length) { host.appendChild(UI.el("div", { class: "muted", style: "font-size:12px" }, "Place devices to manage layers.")); return; }
+    present.forEach(d => {
+      const cb = UI.el("input", { type: "checkbox", checked: !this._hidden.has(d.id),
+        onchange: e => {
+          if (e.target.checked) this._hidden.delete(d.id); else this._hidden.add(d.id);
+          if (this._fab) { this._fab.getObjects().forEach(o => { if (o.deviceType === d.id) o.visible = e.target.checked; }); this._fab.requestRenderAll(); }
+        } });
+      host.appendChild(UI.el("label", { class: "layer-item" }, [
+        UI.el("span", { class: "row-flex", style: "gap:8px" }, [ cb, UI.devBadge(d), UI.el("span", {}, d.short) ]),
+        UI.el("span", { class: "lcount" }, String(counts[d.id]))
+      ]));
+    });
+  },
+
+  updateLegend() {
+    const host = UI.$("#p-legend"); if (!host) return;
+    const counts = {}; let total = 0;
+    this.plan().objects.forEach(o => { counts[o.deviceType] = (counts[o.deviceType] || 0) + 1; total++; });
+    host.innerHTML = "";
+    if (!total) { host.appendChild(UI.el("div", { class: "muted", style: "font-size:12px" }, "No devices placed yet.")); return; }
+    FAS_DATA.devices.filter(d => counts[d.id]).forEach(d => {
+      host.appendChild(UI.el("div", { class: "lg" }, [
+        UI.el("span", { class: "row-flex", style: "gap:8px" }, [ UI.devBadge(d), UI.el("span", {}, d.name) ]),
+        UI.el("b", {}, String(counts[d.id]))
+      ]));
+    });
+    host.appendChild(UI.el("div", { class: "lg", style: "border:none;margin-top:4px" }, [
+      UI.el("b", { style: "color:var(--accent)" }, "TOTAL"), UI.el("b", { style: "color:var(--accent)" }, String(total))
+    ]));
+  },
+
+  /* ---------- exports ---------- */
+  download(url, name) {
+    const a = UI.el("a", { href: url, download: name }); document.body.appendChild(a); a.click(); a.remove();
+  },
+
+  exportPNG() {
+    if (!this._fab) { UI.toast("Load a plan first", "err"); return; }
+    this._fab.discardActiveObject(); this._fab.requestRenderAll();
+    const url = this._fab.toDataURL({ format: "png", multiplier: 1.5 });
+    this.download(url, (this.plan().name || "plan") + "-p" + this._page + ".png");
+    UI.toast("PNG exported", "ok");
+  },
+
+  exportPDF() {
+    if (!this._fab || typeof window.jspdf === "undefined") { UI.toast("Load a plan first", "err"); return; }
+    this._fab.discardActiveObject(); this._fab.requestRenderAll();
+    const { jsPDF } = window.jspdf;
+    const w = this._fab.getWidth(), h = this._fab.getHeight();
+    const orient = w >= h ? "landscape" : "portrait";
+    const pdf = new jsPDF({ orientation: orient, unit: "pt", format: "a4" });
+    const PW = pdf.internal.pageSize.getWidth(), PH = pdf.internal.pageSize.getHeight();
+    const M = 28, headH = 54, footH = 24;
+    const p = Store.state.project;
+
+    // header
+    pdf.setFillColor(11, 14, 19); pdf.rect(0, 0, PW, headH, "F");
+    pdf.setTextColor(255, 70, 58); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16);
+    pdf.text("FAS", M, 26);
+    pdf.setTextColor(230, 238, 246); pdf.setFontSize(11);
+    pdf.text((p.name || "Fire Alarm Layout") + "  ·  " + (this.plan().name || "Layout") + "  ·  Page " + this._page, M + 34, 24);
+    pdf.setTextColor(140, 152, 168); pdf.setFontSize(8);
+    pdf.text("Ejaf Technology", PW - M, 20, { align: "right" });
+
+    // image fit
+    const img = this._fab.toDataURL({ format: "png", multiplier: 2 });
+    const availW = PW - 2 * M, availH = PH - headH - footH - 2 * M;
+    const r = Math.min(availW / w, availH / h);
+    const iw = w * r, ih = h * r;
+    pdf.addImage(img, "PNG", (PW - iw) / 2, headH + M, iw, ih);
+
+    // footer
+    pdf.setDrawColor(40, 49, 61); pdf.line(M, PH - footH, PW - M, PH - footH);
+    pdf.setTextColor(120, 132, 148); pdf.setFontSize(8);
+    pdf.text("Powered by Siwar", M, PH - 10);
+    pdf.text(new Date().toLocaleDateString(), PW - M, PH - 10, { align: "right" });
+
+    pdf.save((this.plan().name || "plan") + "-p" + this._page + ".pdf");
+    UI.toast("PDF exported", "ok");
+  }
+};
+
+
+/* ===== js/reports.js ===== */
+/* =====================================================================
+   reports.js : SECTION 3 — REPORTS & PRICING
+   Editable price list (per device / cable / panel + currency),
+   live BOQ preview, professional English PDF report (jsPDF + autotable)
+   and a multi-sheet Excel workbook (SheetJS).
+   ===================================================================== */
+
+const ReportsSection = {
+
+  cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); },
+  fmt(n) { return (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+  round2(n) { return Math.round((Number(n) || 0) * 100) / 100; },
+
+  render(root) {
+    const s = Store.state;
+    root.innerHTML = "";
+
+    root.appendChild(UI.el("div", { class: "page-head" }, [
+      UI.el("h2", {}, [ "Reports & Pricing", UI.el("span", { class: "tag" }, "OUTPUT") ]),
+      UI.el("p", {}, "Set unit prices, preview the bill of quantities, then export a professional PDF report or an Excel workbook. All figures roll up automatically from the FAS and Infrastructure sections.")
+    ]));
+
+    /* ---- currency + pricing ---- */
+    const curSel = UI.el("select", { onchange: e => { s.project.currency = e.target.value; Store.save(); App.refreshTopbar(); this.updatePreview(); } },
+      FAS_DATA.currencies.map(c => UI.el("option", { value: c, selected: s.project.currency === c }, c)));
+
+    const devRows = FAS_DATA.devices.map(d => UI.el("tr", {}, [
+      UI.el("td", {}, UI.el("span", { class: "row-flex", style: "gap:8px" }, [ UI.devBadge(d), d.name ])),
+      UI.el("td", {}, d.group),
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: "0.01", class: "mono", value: s.pricing[d.id] ?? 0,
+        oninput: e => { s.pricing[d.id] = Number(e.target.value) || 0; Store.save(); this.updatePreview(); } }))
+    ]));
+
+    const cableRows = FAS_DATA.cables.map(c => UI.el("tr", {}, [
+      UI.el("td", {}, c.name),
+      UI.el("td", {}, c.section),
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: "0.01", class: "mono", value: s.pricing["cable_" + c.id] ?? 0,
+        oninput: e => { s.pricing["cable_" + c.id] = Number(e.target.value) || 0; Store.save(); this.updatePreview(); } }))
+    ]));
+
+    root.appendChild(UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Pricing & Settings"), UI.el("span", { class: "k" }, "unit rates" ),
+        UI.el("span", { style: "flex:1" }),
+        UI.el("label", { class: "fld", style: "flex-direction:row;align-items:center;gap:8px" }, [ UI.el("span", {}, "Currency"), curSel ]) ]),
+      UI.el("div", { class: "card-b" }, [
+        UI.el("div", { class: "grid-2" }, [
+          UI.el("div", {}, [
+            UI.el("div", { class: "subhead" }, "Device unit prices"),
+            UI.el("table", {}, [
+              UI.el("thead", {}, UI.el("tr", {}, [ UI.el("th", {}, "Device"), UI.el("th", {}, "Category"), UI.el("th", { class: "num" }, "Unit Price") ])),
+              UI.el("tbody", {}, devRows)
+            ])
+          ]),
+          UI.el("div", {}, [
+            UI.el("div", { class: "subhead" }, "Cable price (per metre)"),
+            UI.el("table", {}, [
+              UI.el("thead", {}, UI.el("tr", {}, [ UI.el("th", {}, "Cable"), UI.el("th", {}, "Section"), UI.el("th", { class: "num" }, "Price / m") ])),
+              UI.el("tbody", {}, cableRows)
+            ])
+          ])
+        ])
+      ])
+    ]));
+
+    /* ---- BOQ preview + exports ---- */
+    root.appendChild(UI.el("div", { class: "card" }, [
+      UI.el("div", { class: "card-h" }, [ UI.el("h3", {}, "Bill of Quantities — Preview"), UI.el("span", { class: "k", id: "boq-cur" }, s.project.currency),
+        UI.el("span", { style: "flex:1" }),
+        UI.el("button", { class: "btn primary sm", onclick: () => this.generatePDF() }, "⬇ PDF Report"),
+        UI.el("button", { class: "btn green sm", onclick: () => this.generateExcel() }, "⬇ Excel (BOQ)") ]),
+      UI.el("div", { class: "card-b" }, [ UI.el("div", { id: "boq-preview" }) ])
+    ]));
+
+    root.appendChild(UI.el("div", { class: "notice", style: "margin-top:4px" }, [
+      UI.el("span", { class: "i" }, "ℹ"),
+      UI.el("span", {}, [ "The PDF includes a design-basis note citing ", UI.el("b", {}, FAS_DATA.standard.code),
+        ". Quantities are indicative and must be verified by a competent fire engineer and the AHJ." ])
+    ]));
+
+    this.updatePreview();
+  },
+
+  updatePreview() {
+    const host = UI.$("#boq-preview"); if (!host) return;
+    const boq = Store.boq();
+    const cur = boq.currency;
+    const cc = UI.$("#boq-cur"); if (cc) cc.textContent = cur;
+    host.innerHTML = "";
+    if (!boq.rows.length) { host.appendChild(UI.el("div", { class: "empty" }, "Add devices, cables or panels (and prices) to build the BOQ.")); return; }
+
+    const body = boq.rows.map(r => UI.el("tr", {}, [
+      UI.el("td", {}, r.item),
+      UI.el("td", {}, r.unit),
+      UI.el("td", { class: "num" }, UI.num(r.qty)),
+      UI.el("td", { class: "num" }, UI.money(r.price)),
+      UI.el("td", { class: "num" }, UI.money(r.total))
+    ]));
+    const foot = UI.el("tr", { class: "t-tot" }, [
+      UI.el("td", { colspan: "4" }, "GRAND TOTAL (" + cur + ")"),
+      UI.el("td", { class: "num" }, UI.money(boq.grand))
+    ]);
+    host.appendChild(UI.el("table", {}, [
+      UI.el("thead", {}, UI.el("tr", {}, [ UI.el("th", {}, "Item"), UI.el("th", {}, "Unit"), UI.el("th", { class: "num" }, "Qty"),
+        UI.el("th", { class: "num" }, "Unit (" + cur + ")"), UI.el("th", { class: "num" }, "Total (" + cur + ")") ])),
+      UI.el("tbody", {}, body.concat(foot))
+    ]));
+  },
+
+  /* =================================================================
+     PDF  (jsPDF + autotable)
+     ================================================================= */
+  generatePDF() {
+    if (typeof window.jspdf === "undefined" || !window.jspdf.jsPDF) { UI.toast("PDF library not loaded", "err"); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    if (typeof doc.autoTable !== "function") { UI.toast("autoTable plugin missing", "err"); return; }
+
+    const PW = doc.internal.pageSize.getWidth(), PH = doc.internal.pageSize.getHeight();
+    const M = 40, TM = 46, BM = 40;
+    const s = Store.state, p = s.project, cur = p.currency || "USD";
+    const brand = FAS_DATA.brandById(s.fas.brand);
+    const dTot = Store.deviceTotals(), cTot = Store.cableTotals(), boq = Store.boq(), pTot = Store.plannerTotals();
+    const RED = [216, 54, 44], DARK = [14, 18, 25], MUT = [120, 132, 148], HEAD = [24, 31, 45], LINE = [223, 227, 233];
+    const fmt = this.fmt, cap = this.cap;
+
+    /* cover band */
+    doc.setFillColor.apply(doc, DARK); doc.rect(0, 0, PW, 122, "F");
+    doc.setTextColor.apply(doc, RED); doc.setFont("helvetica", "bold"); doc.setFontSize(36); doc.text("FAS", M, 62);
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+    doc.text("Fire Alarm System — Design & BOQ Report", M, 88);
+    doc.setTextColor(170, 180, 195); doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+    doc.text("Ejaf Technology", PW - M, 40, { align: "right" });
+    doc.text("Powered by Siwar", PW - M, 54, { align: "right" });
+    doc.setFontSize(8); doc.setTextColor(150, 160, 175);
+    doc.text(FAS_DATA.standard.code, PW - M, 104, { align: "right" });
+
+    let y = 150;
+
+    /* project info */
+    doc.autoTable({
+      startY: y, theme: "grid", margin: { left: M, right: M, top: TM, bottom: BM },
+      styles: { fontSize: 9, cellPadding: 5, lineColor: LINE, textColor: [30, 36, 46] },
+      columnStyles: {
+        0: { fontStyle: "bold", fillColor: [244, 246, 249], textColor: [60, 66, 76], cellWidth: 92 },
+        2: { fontStyle: "bold", fillColor: [244, 246, 249], textColor: [60, 66, 76], cellWidth: 92 }
+      },
+      body: [
+        ["Project", p.name || "—", "Client", p.client || "—"],
+        ["Location", p.location || "—", "Consultant", p.consultant || "—"],
+        ["Engineer", p.engineer || "—", "Reference", p.reference || "—"],
+        ["Date", p.date || "—", "Currency", cur],
+        ["System Brand", brand ? brand.name : "—", "System Type", cap(s.fas.type)]
+      ]
+    });
+    y = doc.lastAutoTable.finalY + 22;
+
+    const title = (t) => {
+      if (y > PH - 96) { doc.addPage(); y = TM + 14; }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor.apply(doc, RED);
+      doc.text(t, M, y); doc.setDrawColor.apply(doc, RED); doc.setLineWidth(1.4); doc.line(M, y + 5, M + 30, y + 5);
+      y += 18;
+    };
+
+    /* system summary */
+    title("System Summary");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(40, 46, 56);
+    const supp = brand ? (brand.type === "both" ? "Addressable & Conventional" : cap(brand.type)) : "—";
+    [
+      "Brand / Vendor:  " + (brand ? brand.name + "  (origin " + brand.country + ")" : "—"),
+      "System Type:  " + cap(s.fas.type) + "      Brand supports:  " + supp,
+      "Datasheets / manuals (official):  " + (brand ? brand.docs : "—"),
+      "Design standard:  " + FAS_DATA.standard.title
+    ].forEach(L => { const w = doc.splitTextToSize(L, PW - 2 * M); doc.text(w, M, y); y += w.length * 12 + 2; });
+    y += 8;
+
+    /* floor breakdown */
+    title("Floor Breakdown");
+    const sum = (f, ids) => ids.reduce((a, id) => a + (Number(f.counts[id]) || 0), 0);
+    const floorBody = s.floors.map((f, i) => [
+      i + 1, f.name || ("Floor " + (i + 1)), Store.floorArea(f), f.rooms.length,
+      f.counts.smoke || 0, f.counts.heat || 0, f.counts.multi || 0, f.counts.mcp || 0,
+      sum(f, ["sounder", "sounderstrobe", "beacon"]), sum(f, ["repeater", "mcim", "gsm", "io", "beam"])
+    ]);
+    if (!floorBody.length) floorBody.push(["—", "No floors entered", "", "", "", "", "", "", "", ""]);
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M, top: TM, bottom: BM },
+      head: [["#", "Floor", "Area m²", "Rooms", "SD", "HD", "MSD", "MCP", "Notif.", "Ctrl."]],
+      body: floorBody, theme: "striped",
+      headStyles: { fillColor: HEAD, textColor: 255, fontSize: 8.5, halign: "center" },
+      styles: { fontSize: 8.5, cellPadding: 4, halign: "center" },
+      columnStyles: { 1: { halign: "left" } }
+    });
+    y = doc.lastAutoTable.finalY + 8;
+    doc.setFontSize(7.5); doc.setTextColor.apply(doc, MUT);
+    doc.text("Notif. = sounders + sounder/strobes + beacons.   Ctrl. = repeaters + interface modules + GSM + beam + I/O.", M, y); y += 18;
+
+    /* equipment totals */
+    title("Equipment Schedule (Totals)");
+    const devBody = FAS_DATA.devices.map(d => {
+      const q = d.id === "panel" ? Math.max(dTot.panel, Number(s.panels) || 0) : dTot[d.id];
+      return [d.name, d.group, q];
+    }).filter(r => r[2] > 0);
+    if (!devBody.length) devBody.push(["No devices entered", "", 0]);
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M, top: TM, bottom: BM },
+      head: [["Device", "Category", "Qty"]], body: devBody, theme: "grid",
+      headStyles: { fillColor: HEAD, textColor: 255, fontSize: 9 },
+      styles: { fontSize: 9, cellPadding: 4 }, columnStyles: { 2: { halign: "right", fontStyle: "bold" } }
+    });
+    y = doc.lastAutoTable.finalY + 16;
+
+    /* cable schedule */
+    title("Cable Schedule");
+    const cableBody = FAS_DATA.cables.map(c => [c.name, c.section, c.brand, cTot.byType[c.id] || 0]).filter(r => r[3] > 0);
+    if (cableBody.length) {
+      doc.autoTable({
+        startY: y, margin: { left: M, right: M, top: TM, bottom: BM },
+        head: [["Cable", "Section", "Brand", "Length (m)"]], body: cableBody, theme: "grid",
+        headStyles: { fillColor: HEAD, textColor: 255, fontSize: 9 }, styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: { 3: { halign: "right" } }
+      });
+      y = doc.lastAutoTable.finalY + 6;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(40, 46, 56);
+      doc.text("Total cable length:  " + UI.num(cTot.total) + " m", M, y + 8); y += 26;
+    } else { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor.apply(doc, MUT); doc.text("No cable runs entered.", M, y); y += 18; }
+
+    /* BOQ */
+    title("Bill of Quantities  (" + cur + ")");
+    const boqBody = boq.rows.map(r => [r.item, r.unit, UI.num(r.qty), fmt(r.price), fmt(r.total)]);
+    if (!boqBody.length) boqBody.push(["No priced items", "", "", "", ""]);
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M, top: TM, bottom: BM },
+      head: [["Item", "Unit", "Qty", "Unit (" + cur + ")", "Total (" + cur + ")"]],
+      body: boqBody, foot: [["", "", "", "GRAND TOTAL", fmt(boq.grand)]], theme: "grid",
+      headStyles: { fillColor: HEAD, textColor: 255, fontSize: 9 },
+      footStyles: { fillColor: [244, 246, 249], textColor: [20, 24, 32], fontStyle: "bold", fontSize: 10 },
+      styles: { fontSize: 9, cellPadding: 4 },
+      columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } }
+    });
+    y = doc.lastAutoTable.finalY + 18;
+
+    /* drawings */
+    if (Object.values(pTot).some(v => v > 0)) {
+      title("Marked Drawings — Device Count");
+      const pb = FAS_DATA.devices.map(d => [d.name, pTot[d.id]]).filter(r => r[1] > 0);
+      doc.autoTable({
+        startY: y, margin: { left: M, right: M, top: TM, bottom: BM },
+        head: [["Device", "On Drawings"]], body: pb, theme: "grid",
+        headStyles: { fillColor: HEAD, textColor: 255, fontSize: 9 }, styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: { 1: { halign: "right" } }
+      });
+      y = doc.lastAutoTable.finalY + 18;
+    }
+
+    /* disclaimer */
+    if (y > PH - 128) { doc.addPage(); y = TM + 14; }
+    const boxH = 86;
+    doc.setFillColor(252, 231, 222); doc.setDrawColor.apply(doc, RED); doc.setLineWidth(1);
+    doc.roundedRect(M, y, PW - 2 * M, boxH, 4, 4, "FD");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(150, 40, 20);
+    doc.text("Design Basis & Disclaimer", M + 12, y + 18);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(80, 50, 40);
+    const disc = "Detector quantities are indicative design aids based on " + FAS_DATA.standard.code +
+      " nominal smooth-ceiling spacing (30 ft / 9.1 m \u2248 84 m\u00B2 per spot smoke detector, with the 0.7 rule). " +
+      "Final detection, notification and cabling design, together with battery/standby and audibility calculations and final device selection, " +
+      "must be completed and verified by a competent fire engineer in accordance with " + FAS_DATA.standard.code +
+      " and the Authority Having Jurisdiction (AHJ).";
+    doc.text(doc.splitTextToSize(disc, PW - 2 * M - 24), M + 12, y + 32);
+
+    /* header + footer on all pages */
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      if (i > 1) {
+        doc.setFillColor.apply(doc, DARK); doc.rect(0, 0, PW, 30, "F");
+        doc.setTextColor.apply(doc, RED); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("FAS", M, 19);
+        doc.setTextColor(200, 206, 214); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+        doc.text(p.name || "Fire Alarm System Report", M + 32, 19);
+        doc.setTextColor(150, 160, 175); doc.text("Ejaf Technology", PW - M, 19, { align: "right" });
+      }
+      doc.setDrawColor.apply(doc, LINE); doc.setLineWidth(0.5); doc.line(M, PH - 26, PW - M, PH - 26);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor.apply(doc, MUT);
+      doc.text("Powered by Siwar  ·  Ejaf Technology", M, PH - 13);
+      doc.text("Page " + i + " / " + pages, PW - M, PH - 13, { align: "right" });
+      if (p.reference) doc.text(String(p.reference), PW / 2, PH - 13, { align: "center" });
+    }
+
+    doc.save("FAS-Report-" + (p.name || "project").replace(/\s+/g, "_") + ".pdf");
+    UI.toast("PDF report generated", "ok");
+  },
+
+  /* =================================================================
+     EXCEL  (SheetJS)
+     ================================================================= */
+  generateExcel() {
+    if (typeof XLSX === "undefined") { UI.toast("Excel library not loaded", "err"); return; }
+    const s = Store.state, p = s.project, cur = p.currency || "USD";
+    const brand = FAS_DATA.brandById(s.fas.brand);
+    const dTot = Store.deviceTotals(), cTot = Store.cableTotals(), boq = Store.boq(), pTot = Store.plannerTotals();
+    const r2 = this.round2, cap = this.cap;
+    const wb = XLSX.utils.book_new();
+
+    /* Project */
+    const proj = [
+      ["FAS — Fire Alarm System Report"], ["Powered by Siwar — Ejaf Technology"], [],
+      ["Project", p.name || ""], ["Client", p.client || ""], ["Location", p.location || ""],
+      ["Consultant", p.consultant || ""], ["Engineer", p.engineer || ""], ["Reference", p.reference || ""],
+      ["Date", p.date || ""], ["Currency", cur], [],
+      ["System Brand", brand ? brand.name : ""], ["System Type", cap(s.fas.type)],
+      ["Design Standard", FAS_DATA.standard.title], ["Datasheets (official)", brand ? brand.docs : ""]
+    ];
+    const wsP = XLSX.utils.aoa_to_sheet(proj); wsP["!cols"] = [{ wch: 22 }, { wch: 60 }];
+    XLSX.utils.book_append_sheet(wb, wsP, "Project");
+
+    /* Floors */
+    const cols = FAS_DATA.devices.filter(d => d.id !== "panel");
+    const fHead = ["#", "Floor", "Area m²", "Rooms"].concat(cols.map(d => d.short));
+    const fRows = s.floors.map((f, i) => [i + 1, f.name || ("Floor " + (i + 1)), Store.floorArea(f), f.rooms.length]
+      .concat(cols.map(d => Number(f.counts[d.id]) || 0)));
+    const wsF = XLSX.utils.aoa_to_sheet([fHead].concat(fRows));
+    wsF["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 9 }, { wch: 7 }].concat(cols.map(() => ({ wch: 6 })));
+    XLSX.utils.book_append_sheet(wb, wsF, "Floors");
+
+    /* Totals */
+    const tot = [["Equipment Schedule — Totals"], [], ["Device", "Category", "Qty"]];
+    FAS_DATA.devices.forEach(d => { const q = d.id === "panel" ? Math.max(dTot.panel, Number(s.panels) || 0) : dTot[d.id]; if (q > 0) tot.push([d.name, d.group, q]); });
+    tot.push([], ["Cable", "Section", "Brand", "Length m"]);
+    FAS_DATA.cables.forEach(c => { const q = cTot.byType[c.id] || 0; if (q > 0) tot.push([c.name, c.section, c.brand, q]); });
+    tot.push([], ["Total cable length (m)", cTot.total]);
+    const wsT = XLSX.utils.aoa_to_sheet(tot); wsT["!cols"] = [{ wch: 34 }, { wch: 16 }, { wch: 14 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(wb, wsT, "Totals");
+
+    /* BOQ */
+    const bo = [["Bill of Quantities (" + cur + ")"], [], ["Item", "Unit", "Qty", "Unit Price (" + cur + ")", "Line Total (" + cur + ")"]];
+    boq.rows.forEach(r => bo.push([r.item, r.unit, r.qty, r2(r.price), r2(r.total)]));
+    bo.push([], ["", "", "", "GRAND TOTAL", r2(boq.grand)]);
+    const wsB = XLSX.utils.aoa_to_sheet(bo); wsB["!cols"] = [{ wch: 40 }, { wch: 8 }, { wch: 8 }, { wch: 18 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsB, "BOQ");
+
+    /* Drawings (optional) */
+    if (Object.values(pTot).some(v => v > 0)) {
+      const dr = [["Marked Drawings — Device Count"], [], ["Device", "Count"]];
+      FAS_DATA.devices.forEach(d => { if (pTot[d.id] > 0) dr.push([d.name, pTot[d.id]]); });
+      const wsD = XLSX.utils.aoa_to_sheet(dr); wsD["!cols"] = [{ wch: 34 }, { wch: 10 }];
+      XLSX.utils.book_append_sheet(wb, wsD, "Drawings");
+    }
+
+    XLSX.writeFile(wb, "FAS-BOQ-" + (p.name || "project").replace(/\s+/g, "_") + ".xlsx");
+    UI.toast("Excel workbook generated", "ok");
+  }
+};
+
+
+/* ===== js/app.js ===== */
+/* =====================================================================
+   app.js : application shell, navigation & lifecycle
+   ===================================================================== */
+
+const LOGO_SVG = `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Ejaf Technology">
+  <defs><linearGradient id="ejaf-g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#ff6a3d"/><stop offset="1" stop-color="#ff463a"/></linearGradient></defs>
+  <path d="M32 3 56 17V47L32 61 8 47V17Z" fill="#12181f" stroke="#2c3744" stroke-width="2"/>
+  <path d="M34 16c5 6 9 10 9 17a11 11 0 0 1-22 .4c0-4 2-7 4-9 .3 2 1.4 3.4 2.8 3.8-.6-4 1.4-9 6.2-12.2Z" fill="url(#ejaf-g)"/>
+  <path d="M27 30h9v3h-6v3h5v3h-5v3h6v3h-9Z" fill="#0b0e13" opacity=".55"/>
+</svg>`;
+
+const App = {
+  current: "fas",
+
+  sections() {
+    return { fas: FasSection, infra: InfraSection, reports: ReportsSection, planner: Planner };
+  },
+
+  meta: [
+    { id: "fas",     label: "FAS",                ico: "◧", desc: "Brand & system" },
+    { id: "infra",   label: "FAS Infrastructure", ico: "▤", desc: "Floors & BOQ" },
+    { id: "reports", label: "Reports",            ico: "⤓", desc: "PDF & Excel" },
+    { id: "planner", label: "Drawings",           ico: "✥", desc: "Plan markup" }
+  ],
+
+  init() {
+    Store.load();
+    this.buildShell();
+    this.go(this.current);
+  },
+
+  buildShell() {
+    document.body.innerHTML = "";
+
+    /* sidebar */
+    const nav = UI.el("nav", { class: "nav", id: "nav" }, [ UI.el("div", { class: "sec-label" }, "Workspace") ]);
+    this.meta.forEach(m => {
+      nav.appendChild(UI.el("button", { "data-id": m.id, onclick: () => this.go(m.id) }, [
+        UI.el("span", { class: "ico" }, m.ico),
+        UI.el("span", {}, m.label)
+      ]));
+    });
+
+    const sidebar = UI.el("aside", { class: "sidebar" }, [
+      UI.el("div", { class: "brand" }, [
+        UI.el("div", { class: "logo" }, [
+          UI.el("span", { html: LOGO_SVG }),
+          UI.el("div", { class: "txt" }, [ UI.el("b", {}, "EJAF"), UI.el("span", {}, "Technology") ])
+        ]),
+        UI.el("div", { class: "appname" }, [ UI.el("span", { class: "big" }, "FAS"), UI.el("span", { class: "sub" }, "Fire Alarm System") ])
+      ]),
+      nav,
+      UI.el("div", { class: "foot" }, [
+        UI.el("div", { class: "pw" }, [ UI.el("span", { class: "dot" }), "Powered by ", UI.el("b", {}, "Siwar") ]),
+        UI.el("button", { class: "btn ghost sm danger", style: "margin-top:10px;width:100%", onclick: () => this.resetProject() }, "↺ Reset project")
+      ])
+    ]);
+
+    /* main */
+    const topbar = UI.el("div", { class: "topbar" }, [
+      UI.el("div", { class: "crumb" }, [ "FAS / ", UI.el("b", { id: "crumb-sec" }, "FAS"), UI.el("span", { class: "pname", id: "crumb-proj" }, "") ]),
+      UI.el("div", { class: "spacer" }),
+      UI.el("span", { class: "pill addr" }, FAS_DATA.standard.code)
+    ]);
+    const content = UI.el("div", { class: "content", id: "content" });
+
+    const main = UI.el("main", { class: "main" }, [ topbar, content ]);
+
+    document.body.appendChild(UI.el("div", { class: "app" }, [ sidebar, main ]));
+  },
+
+  go(id) {
+    if (!this.sections()[id]) return;
+    this.current = id;
+    UI.$$("#nav button").forEach(b => b.classList.toggle("active", b.dataset.id === id));
+    const m = this.meta.find(x => x.id === id);
+    const cs = UI.$("#crumb-sec"); if (cs) cs.textContent = m ? m.label : id;
+    const content = UI.$("#content");
+    content.classList.remove("content"); void content.offsetWidth; content.classList.add("content"); // replay fade
+    this.sections()[id].render(content);
+    this.refreshTopbar();
+  },
+
+  refreshTopbar() {
+    const el = UI.$("#crumb-proj");
+    if (el) {
+      const n = (Store.state.project.name || "").trim();
+      el.textContent = n ? "· " + n : "· Untitled project";
+    }
+  },
+
+  resetProject() {
+    if (!confirm("Reset the whole project? This clears all floors, devices, drawings and pricing on this device.")) return;
+    Store.reset();
+    Planner._pdf = null; Planner._fab = null; Planner._hidden = new Set();
+    this.go(this.current);
+    UI.toast("Project reset", "ok");
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => App.init());
+
+  </script>
 </body>
 </html>
