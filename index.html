@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAS - Ejaf Technology</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #003366;
+            --secondary: #005b96;
+            --bg: #f4f7f6;
+            --text: #333;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--bg); color: var(--text); }
+        header { background-color: var(--primary); color: white; padding: 20px; text-align: center; position: relative; }
+        .logo { position: absolute; top: 20px; left: 20px; font-weight: bold; font-size: 1.5em; letter-spacing: 1px; }
+        main { max-width: 1100px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { border-bottom: 2px solid var(--secondary); padding-bottom: 10px; color: var(--primary); }
+        .section-box { margin-bottom: 40px; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+        button { background-color: var(--secondary); color: white; cursor: pointer; border: none; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: var(--primary); }
+        
+        .floor-box { background: #eaf2f8; padding: 20px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #b3d4ec; }
+        .room-box { background: #fff; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid var(--secondary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
+        
+        .dashboard { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 20px; }
+        .dashboard h3 { margin-top: 0; }
+        .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center; }
+        .dash-item { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 5px; }
+        .dash-item span { display: block; font-size: 1.5em; font-weight: bold; margin-top: 5px; }
+
+        canvas { border: 2px dashed #ccc; margin-top: 15px; border-radius: 5px; cursor: crosshair; }
+        .canvas-tools { margin-top: 10px; display: flex; gap: 10px; }
+        .tool-btn { background: #555; }
+        
+        footer { text-align: center; padding: 20px; font-weight: bold; color: #777; background: white; margin-top: 40px; border-top: 1px solid #ddd; }
+        .results-box a { display: inline-block; margin-top: 10px; color: var(--secondary); font-weight: bold; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Ejaf Technology</div>
+        <h1>FAS Designer & Estimator</h1>
+        <p>Professional Fire Alarm System Infrastructure Tool</p>
+    </header>
+
+    <main>
+        <section class="section-box" id="sec-equipment">
+            <h2>1. FAS Equipment Selection</h2>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Brand / Vendor:</label>
+                    <select id="brandSelect">
+                        <option value="Eaton">Eaton</option>
+                        <option value="Zeta">Zeta</option>
+                        <option value="Apollo">Apollo</option>
+                        <option value="Siemens">Siemens</option>
+                        <option value="Hikvision">Hikvision</option>
+                        <option value="Dahua">Dahua</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>System Architecture:</label>
+                    <select id="systemType">
+                        <option value="Addressable">Addressable</option>
+                        <option value="Conventional">Conventional</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="getDatasheets()">Generate Datasheet Links</button>
+            <div id="datasheetResults" class="results-box"></div>
+        </section>
+
+        <section class="section-box" id="report-content">
+            <h2>2. FAS Infrastructure</h2>
+            <div id="floorsContainer"></div>
+            <button onclick="addFloor()" style="width: 100%; margin-top: 10px; background-color: #28a745;">+ Add New Floor</button>
+
+            <div class="dashboard">
+                <h3>Project Totals & BOQ</h3>
+                <div class="dash-grid">
+                    <div class="dash-item">Smoke Detectors<span id="tot-smoke">0</span></div>
+                    <div class="dash-item">Heat Detectors<span id="tot-heat">0</span></div>
+                    <div class="dash-item">Sounders<span id="tot-sounder">0</span></div>
+                    <div class="dash-item">Callpoints<span id="tot-callpoint">0</span></div>
+                    <div class="dash-item">Modules (MCIM)<span id="tot-module">0</span></div>
+                    <div class="dash-item">Repeaters<span id="tot-repeater">0</span></div>
+                    <div class="dash-item">Cable Length (m)<span id="tot-cable">0</span></div>
+                    <div class="dash-item">Fire Panels<span id="tot-panel">1</span></div>
+                </div>
+                <h3 style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+                    Total Estimated Price: $<span id="tot-price">0.00</span>
+                </h3>
+            </div>
+        </section>
+
+        <section class="section-box">
+            <h2>3. Professional Reports</h2>
+            <div class="grid-2">
+                <button onclick="exportPDF()" style="background: #d32f2f;">Export PDF Report</button>
+                <button onclick="exportExcel()" style="background: #1976d2;">Export Excel BOQ</button>
+            </div>
+        </section>
+
+        <section class="section-box">
+            <h2>4. Floor Plan Design</h2>
+            <p style="font-size: 0.9em; color: #666;">Upload a floor plan image, then drag and drop sensors onto it.</p>
+            <input type="file" id="planUpload" accept="image/*" onchange="uploadPlan(event)">
+            
+            <div class="canvas-tools">
+                <button class="tool-btn" onclick="addShape('smoke')">+ Add Smoke (Red)</button>
+                <button class="tool-btn" onclick="addShape('sounder')">+ Add Sounder (Blue)</button>
+                <button class="tool-btn" onclick="addShape('callpoint')">+ Add Callpoint (Green)</button>
+                <button class="tool-btn" onclick="clearCanvas()" style="background: #d32f2f;">Clear Canvas</button>
+            </div>
+            
+            <canvas id="floorCanvas" width="1000" height="600"></canvas>
+        </section>
+
+    </main>
+
+    <footer>
+        Powered by siwar | Ejaf Technology &copy; 2026
+    </footer>
+
+    <script>
+        // --- 1. DATASHEETS LOGIC ---
+        function getDatasheets() {
+            const brand = document.getElementById('brandSelect').value;
+            const res = document.getElementById('datasheetResults');
+            res.innerHTML = `
+                <a href="#" onclick="alert('Downloading ${brand} Datasheet...')">📄 ${brand} Official Datasheet (.pdf)</a><br>
+                <a href="#" onclick="alert('Downloading ${brand} Installation Manual...')">📘 ${brand} Installation Manual (.pdf)</a>
+            `;
+        }
+
+        // --- 2. INFRASTRUCTURE & CALCULATION LOGIC ---
+        let floorCount = 0;
+
+        // Prices for calculation (Can be edited)
+        const prices = { smoke: 25, heat: 20, sounder: 35, callpoint: 15, module: 45, repeater: 250, cablePerMeter: 1.2, panel: 800 };
+
+        function addFloor() {
+            floorCount++;
+            const fId = `floor-${floorCount}`;
+            const floorHTML = `
+                <div class="floor-box" id="${fId}">
+                    <h3>Floor ${floorCount}</h3>
+                    <div id="rooms-${fId}"></div>
+                    <button onclick="addRoom('${fId}')" style="background: #555; font-size: 0.8em;">+ Add Room to Floor ${floorCount}</button>
+                </div>
+            `;
+            document.getElementById('floorsContainer').insertAdjacentHTML('beforeend', floorHTML);
+            addRoom(fId); // Add first room automatically
+        }
+
+        function addRoom(floorId) {
+            const rId = `room-${Math.random().toString(36).substr(2, 9)}`;
+            const roomHTML = `
+                <div class="room-box" id="${rId}">
+                    <strong>Room Dimensions (NFPA 72 Auto-Calc)</strong>
+                    <div class="room-grid">
+                        <div class="form-group"><label>Length (m):</label><input type="number" class="r-len" oninput="calcRoom('${rId}')"></div>
+                        <div class="form-group"><label>Width (m):</label><input type="number" class="r-wid" oninput="calcRoom('${rId}')"></div>
+                        <div class="form-group"><label>Auto Smoke:</label><input type="number" class="r-auto" disabled value="0"></div>
+                    </div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+                    <strong>Actual Quantities & Infrastructure</strong>
+                    <div class="room-grid">
+                        <div class="form-group"><label>Smoke Det.:</label><input type="number" class="q-smoke item-qty" value="0" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>Heat Det.:</label><input type="number" class="q-heat item-qty" value="0" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>Sounders:</label><input type="number" class="q-sounder item-qty" value="0" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>Callpoints:</label><input type="number" class="q-callpoint item-qty" value="0" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>MCIM / GSM:</label><input type="number" class="q-module item-qty" value="0" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>Repeaters:</label><input type="number" class="q-repeater item-qty" value="0" oninput="updateTotals()"></div>
+                        <div class="form-group"><label>Cable Type:</label><select><option>FP200 1.5mm</option><option>FP200 2.5mm</option></select></div>
+                        <div class="form-group"><label>Cable Len(m):</label><input type="number" class="q-cable item-qty" value="0" oninput="updateTotals()"></div>
+                    </div>
+                </div>
+            `;
+            document.getElementById(`rooms-${floorId}`).insertAdjacentHTML('beforeend', roomHTML);
+        }
+
+        function calcRoom(roomId) {
+            const room = document.getElementById(roomId);
+            const len = parseFloat(room.querySelector('.r-len').value) || 0;
+            const wid = parseFloat(room.querySelector('.r-wid').value) || 0;
+            const area = len * wid;
+            
+            // NFPA 72: Approx 83.6 sqm per smoke detector
+            const suggested = area > 0 ? Math.ceil(area / 83.6) : 0;
+            room.querySelector('.r-auto').value = suggested;
+            
+            // Auto-fill the manual smoke input if it's currently 0
+            const manualSmoke = room.querySelector('.q-smoke');
+            if(parseFloat(manualSmoke.value) === 0 || manualSmoke.value === "") {
+                manualSmoke.value = suggested;
+            }
+            updateTotals();
+        }
+
+        function updateTotals() {
+            let tSmoke = 0, tHeat = 0, tSounder = 0, tCallpoint = 0, tModule = 0, tRepeater = 0, tCable = 0;
+            
+            document.querySelectorAll('.q-smoke').forEach(el => tSmoke += parseFloat(el.value) || 0);
+            document.querySelectorAll('.q-heat').forEach(el => tHeat += parseFloat(el.value) || 0);
+            document.querySelectorAll('.q-sounder').forEach(el => tSounder += parseFloat(el.value) || 0);
+            document.querySelectorAll('.q-callpoint').forEach(el => tCallpoint += parseFloat(el.value) || 0);
+            document.querySelectorAll('.q-module').forEach(el => tModule += parseFloat(el.value) || 0);
+            document.querySelectorAll('.q-repeater').forEach(el => tRepeater += parseFloat(el.value) || 0);
+            document.querySelectorAll('.q-cable').forEach(el => tCable += parseFloat(el.value) || 0);
+
+            // Panels: 1 panel per 250 addressable devices (Approximate rule)
+            const totalDevices = tSmoke + tHeat + tSounder + tCallpoint + tModule;
+            const tPanel = totalDevices > 0 ? Math.ceil(totalDevices / 250) : 1;
+
+            document.getElementById('tot-smoke').innerText = tSmoke;
+            document.getElementById('tot-heat').innerText = tHeat;
+            document.getElementById('tot-sounder').innerText = tSounder;
+            document.getElementById('tot-callpoint').innerText = tCallpoint;
+            document.getElementById('tot-module').innerText = tModule;
+            document.getElementById('tot-repeater').innerText = tRepeater;
+            document.getElementById('tot-cable').innerText = tCable;
+            document.getElementById('tot-panel').innerText = tPanel;
+
+            // Calculate Price
+            const totalPrice = (tSmoke * prices.smoke) + (tHeat * prices.heat) + (tSounder * prices.sounder) + 
+                               (tCallpoint * prices.callpoint) + (tModule * prices.module) + 
+                               (tRepeater * prices.repeater) + (tCable * prices.cablePerMeter) + 
+                               (tPanel * prices.panel);
+            
+            document.getElementById('tot-price').innerText = totalPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
+        }
+
+        // Initialize with one floor
+        window.onload = () => { addFloor(); initCanvas(); };
+
+        // --- 3. EXPORT LOGIC ---
+        function exportPDF() {
+            const element = document.getElementById('report-content');
+            const opt = {
+                margin:       0.5,
+                filename:     'FAS_Infrastructure_Report.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function exportExcel() {
+            const brand = document.getElementById('brandSelect').value;
+            const data = [
+                ["Ejaf Technology - FAS BOQ Report"],
+                ["Brand:", brand],
+                [],
+                ["Item Description", "Quantity", "Unit Price ($)", "Total ($)"],
+                ["Smoke Detector", document.getElementById('tot-smoke').innerText, prices.smoke, parseFloat(document.getElementById('tot-smoke').innerText) * prices.smoke],
+                ["Heat Detector", document.getElementById('tot-heat').innerText, prices.heat, parseFloat(document.getElementById('tot-heat').innerText) * prices.heat],
+                ["Sounder", document.getElementById('tot-sounder').innerText, prices.sounder, parseFloat(document.getElementById('tot-sounder').innerText) * prices.sounder],
+                ["Callpoint", document.getElementById('tot-callpoint').innerText, prices.callpoint, parseFloat(document.getElementById('tot-callpoint').innerText) * prices.callpoint],
+                ["MCIM Module", document.getElementById('tot-module').innerText, prices.module, parseFloat(document.getElementById('tot-module').innerText) * prices.module],
+                ["Repeater Panel", document.getElementById('tot-repeater').innerText, prices.repeater, parseFloat(document.getElementById('tot-repeater').innerText) * prices.repeater],
+                ["Fire-Resistant Cable (m)", document.getElementById('tot-cable').innerText, prices.cablePerMeter, parseFloat(document.getElementById('tot-cable').innerText) * prices.cablePerMeter],
+                ["Fire Alarm Control Panel", document.getElementById('tot-panel').innerText, prices.panel, parseFloat(document.getElementById('tot-panel').innerText) * prices.panel],
+                [],
+                ["", "", "GRAND TOTAL ($)", document.getElementById('tot-price').innerText]
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "FAS BOQ");
+            XLSX.writeFile(wb, "FAS_BOQ_EjafTech.xlsx");
+        }
+
+        // --- 4. FABRIC.JS FLOOR PLAN LOGIC ---
+        let canvas;
+        function initCanvas() {
+            canvas = new fabric.Canvas('floorCanvas');
+        }
+
+        function uploadPlan(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imgObj = new Image();
+                imgObj.src = event.target.result;
+                imgObj.onload = function() {
+                    const img = new fabric.Image(imgObj);
+                    // Scale image to fit canvas width
+                    const scale = canvas.width / img.width;
+                    img.set({ scaleX: scale, scaleY: scale, selectable: false });
+                    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+                }
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        }
+
+        function addShape(type) {
+            let shape;
+            if(type === 'smoke') {
+                shape = new fabric.Circle({ radius: 10, fill: 'red', left: 100, top: 100 });
+            } else if (type === 'sounder') {
+                shape = new fabric.Rect({ width: 20, height: 20, fill: 'blue', left: 150, top: 100 });
+            } else if (type === 'callpoint') {
+                shape = new fabric.Triangle({ width: 20, height: 20, fill: 'green', left: 200, top: 100 });
+            }
+            // Add label inside properties for hover/tooltip in advanced versions
+            shape.setControlsVisibility({ mt: false, mb: false, ml: false, mr: false, bl: false, br: false, tl: false, tr: false, mtr: false }); // disable resizing for sensors
+            canvas.add(shape);
+        }
+
+        function clearCanvas() {
+            canvas.clear();
+            canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
+        }
+    </script>
+</body>
+</html>
