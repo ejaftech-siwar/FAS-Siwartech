@@ -422,6 +422,16 @@ const FAS_DATA = {
 
   currencies: ["USD", "EUR", "GBP", "SAR", "AED", "QAR", "KWD", "OMR", "BHD", "IQD", "EGP", "JOD"],
 
+  /* Per-currency money handling. decimals = fraction digits shown;
+     step = input stepper increment; round = value rounding granularity.
+     Iraqi Dinar: whole dinars (round 1), stepper moves in 250 increments. */
+  currencyMeta: {
+    IQD: { decimals: 0, step: 250, round: 1 },
+    KWD: { decimals: 3, step: 0.001 },
+    BHD: { decimals: 3, step: 0.001 },
+    OMR: { decimals: 3, step: 0.001 }
+  },
+
   /* ---------- Design standard reference ---------- */
   standard: {
     code: "NFPA 72 (2025)",
@@ -488,6 +498,7 @@ const Store = {
         // make sure nested defaults exist
         this.state.planner = this.state.planner || { plans: [] };
         this.state.pricing = Object.assign(this.blank().pricing, this.state.pricing || {});
+        (this.state.floors || []).forEach(f => this.normalizeFloor(f));
       } else {
         this.state = this.blank();
       }
@@ -514,10 +525,23 @@ const Store = {
     this.state.floors.push({
       id: this.uid(),
       name: name || ("Floor " + (this.state.floors.length + 1)),
+      length: 0, width: 0, height: 0,
+      corridor: { enabled: false, length: 0, width: 0 },
       rooms: [],
       counts
     });
     this.save();
+  },
+
+  /* backfill fields on floors loaded from older saved state */
+  normalizeFloor(f) {
+    if (!f) return;
+    if (f.length == null) f.length = 0;
+    if (f.width == null) f.width = 0;
+    if (f.height == null) f.height = 0;
+    if (!f.corridor) f.corridor = { enabled: false, length: 0, width: 0 };
+    if (!f.rooms) f.rooms = [];
+    if (!f.counts) { f.counts = {}; FAS_DATA.devices.forEach(d => f.counts[d.id] = 0); }
   },
 
   removeFloor(id) {
@@ -546,19 +570,34 @@ const Store = {
   recalcFloorDetectors(floorId) {
     const f = this.state.floors.find(x => x.id === floorId);
     if (!f) return;
-    const cov = this.state.coverage.smoke || 100;
+    const cov = this.state.coverage.smoke || 84;
     let suggested = 0;
-    f.rooms.forEach(r => {
+    (f.rooms || []).forEach(r => {
       const area = (Number(r.length) || 0) * (Number(r.width) || 0);
       if (area > 0) suggested += Math.max(1, Math.ceil(area / cov));
     });
+    const corr = this.corridorArea(f);
+    if (corr > 0) suggested += Math.max(1, Math.ceil(corr / cov));
+    // fall back to the gross floor envelope when no rooms / corridor are detailed
+    if (suggested === 0) {
+      const gross = (Number(f.length) || 0) * (Number(f.width) || 0);
+      if (gross > 0) suggested = Math.max(1, Math.ceil(gross / cov));
+    }
     f.suggestedSmoke = suggested;
     // only auto-fill if user hasn't manually raised it above the suggestion
-    if (f.counts.smoke < suggested) f.counts.smoke = suggested;
+    if ((f.counts.smoke || 0) < suggested) f.counts.smoke = suggested;
+  },
+
+  corridorArea(f) {
+    if (!f || !f.corridor || !f.corridor.enabled) return 0;
+    return (Number(f.corridor.length) || 0) * (Number(f.corridor.width) || 0);
   },
 
   floorArea(f) {
-    return f.rooms.reduce((s, r) => s + (Number(r.length) || 0) * (Number(r.width) || 0), 0);
+    let a = (f.rooms || []).reduce((s, r) => s + (Number(r.length) || 0) * (Number(r.width) || 0), 0);
+    a += this.corridorArea(f);
+    if (a === 0) a = (Number(f.length) || 0) * (Number(f.width) || 0); // gross envelope fallback
+    return Math.round(a * 100) / 100;
   },
 
   /* ---------- cables ---------- */
@@ -635,6 +674,17 @@ const Store = {
     });
 
     return { rows, grand, currency: cur };
+  },
+
+  /* ---------- currency helpers ---------- */
+  curMeta() {
+    const c = this.state.project.currency;
+    return (FAS_DATA.currencyMeta && FAS_DATA.currencyMeta[c]) || { decimals: 2, step: 0.01 };
+  },
+  roundMoney(n) {
+    const m = this.curMeta();
+    const r = (m.round != null) ? m.round : (m.step || 0.01);
+    return Math.round((Number(n) || 0) / r) * r;
   }
 };
 
@@ -672,9 +722,9 @@ const UI = {
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   },
 
-  money(n, cur) {
+  money(n, decimals = 2) {
     const v = Number(n) || 0;
-    return (cur ? cur + " " : "") + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   },
 
   num(n) { return (Number(n) || 0).toLocaleString(); },
@@ -845,7 +895,7 @@ const InfraSection = {
 
     root.appendChild(UI.el("div", { class: "page-head" }, [
       UI.el("h2", {}, [ "FAS Infrastructure", UI.el("span", { class: "tag" }, "BOQ") ]),
-      UI.el("p", {}, "Describe the building floor-by-floor. Enter room sizes to auto-suggest smoke detectors, then fine-tune every device count manually. Totals roll up live for the whole project.")
+      UI.el("p", {}, "Describe the building floor-by-floor: set each floor's length, width and height, add rooms and an optional corridor to auto-suggest smoke detectors, then fine-tune every device count manually. Totals roll up live for the whole project.")
     ]));
 
     root.appendChild(UI.el("div", { class: "notice" }, [
@@ -928,6 +978,7 @@ const InfraSection = {
       ]),
       UI.el("div", { class: "meta" }, [
         UI.el("span", {}, [ "Area ", UI.el("b", { id: "area-" + f.id }, Store.floorArea(f) + " m²") ]),
+        UI.el("span", {}, [ "H ", UI.el("b", { id: "h-" + f.id }, (Number(f.height) || 0) + " m") ]),
         UI.el("span", {}, [ "Rooms ", UI.el("b", {}, String(f.rooms.length)) ]),
         UI.el("span", {}, [ "Devices ", UI.el("b", { id: "dev-" + f.id }, String(totalDevices)) ]),
         UI.el("button", { class: "x-btn", title: "Delete floor", onclick: e => {
@@ -939,6 +990,57 @@ const InfraSection = {
     head.addEventListener("click", () => wrap.classList.toggle("open"));
 
     const body = UI.el("div", { class: "fb" });
+
+    /* ---- floor dimensions + corridor ---- */
+    const heightNote = UI.el("div");
+    function refreshHeightNote() {
+      heightNote.innerHTML = "";
+      if ((Number(f.height) || 0) > 12.2) {
+        heightNote.appendChild(UI.el("div", { class: "notice", style: "margin-top:10px" }, [
+          UI.el("span", { class: "i" }, "⚠"),
+          UI.el("span", {}, "Ceiling height exceeds 12.2 m (40 ft) — " + FAS_DATA.standard.code + " requires a performance-based spacing design above this height.")
+        ]));
+      }
+    }
+    const onDimChange = () => {
+      Store.recalcFloorDetectors(f.id); Store.save();
+      this.updateFloorMeta(f); this.syncSmokeField(f);
+      const sg = UI.$("#sg-" + f.id); if (sg) sg.textContent = " · sugg " + (f.suggestedSmoke || 0);
+      this.updateTotals(); refreshHeightNote();
+    };
+    const dimField = (label, key) => UI.el("label", { class: "fld" }, [
+      UI.el("span", {}, [ label, UI.el("span", { class: "hint" }, " m") ]),
+      UI.el("input", { type: "number", min: "0", step: "0.1", class: "mono", value: f[key] || "",
+        oninput: e => { f[key] = Number(e.target.value) || 0; onDimChange(); } })
+    ]);
+
+    body.appendChild(UI.el("div", { class: "subhead" }, "Floor dimensions (gross envelope)"));
+    body.appendChild(UI.el("div", { class: "grid-3" }, [ dimField("Length", "length"), dimField("Width", "width"), dimField("Height", "height") ]));
+    body.appendChild(heightNote);
+
+    const corr = f.corridor;
+    const cLen = UI.el("input", { type: "number", min: "0", step: "0.1", class: "mono", value: corr.length || "", placeholder: "Length (m)",
+      oninput: e => { corr.length = Number(e.target.value) || 0; onDimChange(); } });
+    const cWid = UI.el("input", { type: "number", min: "0", step: "0.1", class: "mono", value: corr.width || "", placeholder: "Width (m)",
+      oninput: e => { corr.width = Number(e.target.value) || 0; onDimChange(); } });
+    const corrFields = UI.el("div", { class: "grid-2", style: "margin-top:8px" }, [
+      UI.el("label", { class: "fld" }, [ UI.el("span", {}, [ "Corridor length", UI.el("span", { class: "hint" }, " m") ]), cLen ]),
+      UI.el("label", { class: "fld" }, [ UI.el("span", {}, [ "Corridor width", UI.el("span", { class: "hint" }, " m") ]), cWid ])
+    ]);
+    function setCorrEnabled(on) { corr.enabled = on; cLen.disabled = !on; cWid.disabled = !on; corrFields.style.opacity = on ? "1" : ".45"; }
+    const chk = UI.el("input", { type: "checkbox", style: "width:16px;height:16px;flex:none;accent-color:#ff5a45" });
+    chk.checked = !!corr.enabled;
+    chk.addEventListener("change", e => { setCorrEnabled(e.target.checked); onDimChange(); });
+
+    body.appendChild(UI.el("div", { class: "sep" }));
+    body.appendChild(UI.el("label", { class: "row-flex", style: "gap:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)" }, [
+      chk, "Include a corridor on this floor"
+    ]));
+    body.appendChild(corrFields);
+    setCorrEnabled(!!corr.enabled);
+    refreshHeightNote();
+
+    body.appendChild(UI.el("div", { class: "sep" }));
 
     /* rooms */
     body.appendChild(UI.el("div", { class: "subhead" }, "Rooms — enter L × W to auto-suggest smoke detectors"));
@@ -1012,6 +1114,7 @@ const InfraSection = {
 
   updateFloorMeta(f) {
     const a = UI.$("#area-" + f.id); if (a) a.textContent = Store.floorArea(f) + " m²";
+    const h = UI.$("#h-" + f.id); if (h) h.textContent = (Number(f.height) || 0) + " m";
     const total = FAS_DATA.devices.reduce((s, d) => s + (Number(f.counts[d.id]) || 0), 0);
     const d = UI.$("#dev-" + f.id); if (d) d.textContent = String(total);
   },
@@ -1448,6 +1551,8 @@ const ReportsSection = {
   render(root) {
     const s = Store.state;
     root.innerHTML = "";
+    const meta = Store.curMeta();
+    const step = String(meta.step);
 
     root.appendChild(UI.el("div", { class: "page-head" }, [
       UI.el("h2", {}, [ "Reports & Pricing", UI.el("span", { class: "tag" }, "OUTPUT") ]),
@@ -1455,20 +1560,20 @@ const ReportsSection = {
     ]));
 
     /* ---- currency + pricing ---- */
-    const curSel = UI.el("select", { onchange: e => { s.project.currency = e.target.value; Store.save(); App.refreshTopbar(); this.updatePreview(); } },
+    const curSel = UI.el("select", { onchange: e => { s.project.currency = e.target.value; Store.save(); App.refreshTopbar(); App.go("reports"); } },
       FAS_DATA.currencies.map(c => UI.el("option", { value: c, selected: s.project.currency === c }, c)));
 
     const devRows = FAS_DATA.devices.map(d => UI.el("tr", {}, [
       UI.el("td", {}, UI.el("span", { class: "row-flex", style: "gap:8px" }, [ UI.devBadge(d), d.name ])),
       UI.el("td", {}, d.group),
-      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: "0.01", class: "mono", value: s.pricing[d.id] ?? 0,
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: step, class: "mono", value: s.pricing[d.id] ?? 0,
         oninput: e => { s.pricing[d.id] = Number(e.target.value) || 0; Store.save(); this.updatePreview(); } }))
     ]));
 
     const cableRows = FAS_DATA.cables.map(c => UI.el("tr", {}, [
       UI.el("td", {}, c.name),
       UI.el("td", {}, c.section),
-      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: "0.01", class: "mono", value: s.pricing["cable_" + c.id] ?? 0,
+      UI.el("td", { class: "num" }, UI.el("input", { type: "number", min: "0", step: step, class: "mono", value: s.pricing["cable_" + c.id] ?? 0,
         oninput: e => { s.pricing["cable_" + c.id] = Number(e.target.value) || 0; Store.save(); this.updatePreview(); } }))
     ]));
 
@@ -1507,7 +1612,9 @@ const ReportsSection = {
 
     root.appendChild(UI.el("div", { class: "notice", style: "margin-top:4px" }, [
       UI.el("span", { class: "i" }, "ℹ"),
-      UI.el("span", {}, [ "The PDF includes a design-basis note citing ", UI.el("b", {}, FAS_DATA.standard.code),
+      UI.el("span", {}, [ "Prices are in ", UI.el("b", {}, s.project.currency),
+        (meta.decimals === 0 ? " — whole units" + (meta.step > 1 ? " (price stepper moves in " + meta.step + "s)" : "") + "." : "."),
+        " The PDF includes a design-basis note citing ", UI.el("b", {}, FAS_DATA.standard.code),
         ". Quantities are indicative and must be verified by a competent fire engineer and the AHJ." ])
     ]));
 
@@ -1518,6 +1625,7 @@ const ReportsSection = {
     const host = UI.$("#boq-preview"); if (!host) return;
     const boq = Store.boq();
     const cur = boq.currency;
+    const dec = Store.curMeta().decimals;
     const cc = UI.$("#boq-cur"); if (cc) cc.textContent = cur;
     host.innerHTML = "";
     if (!boq.rows.length) { host.appendChild(UI.el("div", { class: "empty" }, "Add devices, cables or panels (and prices) to build the BOQ.")); return; }
@@ -1526,12 +1634,12 @@ const ReportsSection = {
       UI.el("td", {}, r.item),
       UI.el("td", {}, r.unit),
       UI.el("td", { class: "num" }, UI.num(r.qty)),
-      UI.el("td", { class: "num" }, UI.money(r.price)),
-      UI.el("td", { class: "num" }, UI.money(r.total))
+      UI.el("td", { class: "num" }, UI.money(Store.roundMoney(r.price), dec)),
+      UI.el("td", { class: "num" }, UI.money(Store.roundMoney(r.total), dec))
     ]));
     const foot = UI.el("tr", { class: "t-tot" }, [
       UI.el("td", { colspan: "4" }, "GRAND TOTAL (" + cur + ")"),
-      UI.el("td", { class: "num" }, UI.money(boq.grand))
+      UI.el("td", { class: "num" }, UI.money(Store.roundMoney(boq.grand), dec))
     ]);
     host.appendChild(UI.el("table", {}, [
       UI.el("thead", {}, UI.el("tr", {}, [ UI.el("th", {}, "Item"), UI.el("th", {}, "Unit"), UI.el("th", { class: "num" }, "Qty"),
@@ -1555,7 +1663,9 @@ const ReportsSection = {
     const brand = FAS_DATA.brandById(s.fas.brand);
     const dTot = Store.deviceTotals(), cTot = Store.cableTotals(), boq = Store.boq(), pTot = Store.plannerTotals();
     const RED = [216, 54, 44], DARK = [14, 18, 25], MUT = [120, 132, 148], HEAD = [24, 31, 45], LINE = [223, 227, 233];
-    const fmt = this.fmt, cap = this.cap;
+    const cap = this.cap;
+    const dec = Store.curMeta().decimals;
+    const fmt = n => UI.money(Store.roundMoney(n), dec);
 
     /* cover band */
     doc.setFillColor.apply(doc, DARK); doc.rect(0, 0, PW, 122, "F");
@@ -1611,17 +1721,17 @@ const ReportsSection = {
     title("Floor Breakdown");
     const sum = (f, ids) => ids.reduce((a, id) => a + (Number(f.counts[id]) || 0), 0);
     const floorBody = s.floors.map((f, i) => [
-      i + 1, f.name || ("Floor " + (i + 1)), Store.floorArea(f), f.rooms.length,
+      i + 1, f.name || ("Floor " + (i + 1)), Store.floorArea(f), Number(f.height) || 0, f.rooms.length,
       f.counts.smoke || 0, f.counts.heat || 0, f.counts.multi || 0, f.counts.mcp || 0,
       sum(f, ["sounder", "sounderstrobe", "beacon"]), sum(f, ["repeater", "mcim", "gsm", "io", "beam"])
     ]);
-    if (!floorBody.length) floorBody.push(["—", "No floors entered", "", "", "", "", "", "", "", ""]);
+    if (!floorBody.length) floorBody.push(["—", "No floors entered", "", "", "", "", "", "", "", "", ""]);
     doc.autoTable({
       startY: y, margin: { left: M, right: M, top: TM, bottom: BM },
-      head: [["#", "Floor", "Area m²", "Rooms", "SD", "HD", "MSD", "MCP", "Notif.", "Ctrl."]],
+      head: [["#", "Floor", "Area m²", "H m", "Rooms", "SD", "HD", "MSD", "MCP", "Notif.", "Ctrl."]],
       body: floorBody, theme: "striped",
-      headStyles: { fillColor: HEAD, textColor: 255, fontSize: 8.5, halign: "center" },
-      styles: { fontSize: 8.5, cellPadding: 4, halign: "center" },
+      headStyles: { fillColor: HEAD, textColor: 255, fontSize: 8, halign: "center" },
+      styles: { fontSize: 8, cellPadding: 3.5, halign: "center" },
       columnStyles: { 1: { halign: "left" } }
     });
     y = doc.lastAutoTable.finalY + 8;
@@ -1731,7 +1841,7 @@ const ReportsSection = {
     const s = Store.state, p = s.project, cur = p.currency || "USD";
     const brand = FAS_DATA.brandById(s.fas.brand);
     const dTot = Store.deviceTotals(), cTot = Store.cableTotals(), boq = Store.boq(), pTot = Store.plannerTotals();
-    const r2 = this.round2, cap = this.cap;
+    const rm = n => Store.roundMoney(n), cap = this.cap;
     const wb = XLSX.utils.book_new();
 
     /* Project */
@@ -1748,11 +1858,12 @@ const ReportsSection = {
 
     /* Floors */
     const cols = FAS_DATA.devices.filter(d => d.id !== "panel");
-    const fHead = ["#", "Floor", "Area m²", "Rooms"].concat(cols.map(d => d.short));
-    const fRows = s.floors.map((f, i) => [i + 1, f.name || ("Floor " + (i + 1)), Store.floorArea(f), f.rooms.length]
+    const fHead = ["#", "Floor", "L m", "W m", "H m", "Area m²", "Corridor m²", "Rooms"].concat(cols.map(d => d.short));
+    const fRows = s.floors.map((f, i) => [i + 1, f.name || ("Floor " + (i + 1)),
+      Number(f.length) || 0, Number(f.width) || 0, Number(f.height) || 0, Store.floorArea(f), Store.corridorArea(f), f.rooms.length]
       .concat(cols.map(d => Number(f.counts[d.id]) || 0)));
     const wsF = XLSX.utils.aoa_to_sheet([fHead].concat(fRows));
-    wsF["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 9 }, { wch: 7 }].concat(cols.map(() => ({ wch: 6 })));
+    wsF["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 7 }, { wch: 7 }, { wch: 7 }, { wch: 9 }, { wch: 11 }, { wch: 7 }].concat(cols.map(() => ({ wch: 6 })));
     XLSX.utils.book_append_sheet(wb, wsF, "Floors");
 
     /* Totals */
@@ -1766,8 +1877,8 @@ const ReportsSection = {
 
     /* BOQ */
     const bo = [["Bill of Quantities (" + cur + ")"], [], ["Item", "Unit", "Qty", "Unit Price (" + cur + ")", "Line Total (" + cur + ")"]];
-    boq.rows.forEach(r => bo.push([r.item, r.unit, r.qty, r2(r.price), r2(r.total)]));
-    bo.push([], ["", "", "", "GRAND TOTAL", r2(boq.grand)]);
+    boq.rows.forEach(r => bo.push([r.item, r.unit, r.qty, rm(r.price), rm(r.total)]));
+    bo.push([], ["", "", "", "GRAND TOTAL", rm(boq.grand)]);
     const wsB = XLSX.utils.aoa_to_sheet(bo); wsB["!cols"] = [{ wch: 40 }, { wch: 8 }, { wch: 8 }, { wch: 18 }, { wch: 18 }];
     XLSX.utils.book_append_sheet(wb, wsB, "BOQ");
 
